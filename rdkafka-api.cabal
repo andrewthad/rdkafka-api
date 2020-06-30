@@ -1,0 +1,39 @@
+cabal-version: 2.4
+name:                rdkafka-api
+version:             0.1.0.0
+-- synopsis:
+-- description:
+-- bug-reports:
+-- license:
+license-file:        LICENSE
+author:              Andrew Martin
+maintainer:          andrew.thaddeus@gmail.com
+-- copyright:
+-- category:
+build-type: Simple
+extra-source-files:
+  README.md
+  CHANGELOG.md
+  cbits/HaskellRdkafka.c
+
+library
+  exposed-modules:
+    Rdkafka
+    Rdkafka.Constant.ConfigurationResult
+    Rdkafka.Constant.EventType
+    Rdkafka.Constant.Partition
+    Rdkafka.Constant.ResponseError
+    Rdkafka.Constant.Type
+    Rdkafka.Struct.Message
+    Rdkafka.Types
+  build-depends:
+    , base >=4.12 && <4.15
+    , primitive >= 0.7
+    , byteslice >= 0.2.2
+    , posix-api
+  hs-source-dirs: src
+  c-sources: cbits/HaskellRdkafka.c
+  extra-libraries: rdkafka
+  extra-lib-dirs: /usr/local/lib
+  build-tool-depends: hsc2hs:hsc2hs >= 0.68.5
+  default-language: Haskell2010
