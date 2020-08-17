@@ -26,6 +26,12 @@ library
     Rdkafka.Constant.Type
     Rdkafka.Struct.Message
     Rdkafka.Types
+    -- TODO: Move these into different library.
+    Rdkafka.Client
+    Rdkafka.Client.Types
+    Rdkafka.Client.Configuration
+    Rdkafka.Client.Producer
+    Rdkafka.Client.Consumer
   build-depends:
     , base >=4.12 && <4.15
     , primitive >= 0.7

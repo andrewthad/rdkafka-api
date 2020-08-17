@@ -1,9 +1,14 @@
 #include <librdkafka/rdkafka.h>
 
+{-# language BangPatterns #-}
+{-# language DeriveAnyClass #-}
+{-# language DerivingStrategies #-}
+{-# language GeneralizedNewtypeDeriving #-}
 {-# language PatternSynonyms #-}
 
 module Rdkafka.Constant.ResponseError
-  ( pattern Begin
+  ( ResponseError(..)
+  , pattern Begin
   , pattern BadMsg
   , pattern BadCompression
   , pattern Destroy
@@ -148,7 +153,161 @@ module Rdkafka.Constant.ResponseError
   , pattern FencedInstanceId
   ) where
 
-import Rdkafka.Types (ResponseError(ResponseError))
+import Control.Exception (Exception)
+import Foreign.C.Types (CInt)
+import Foreign.Storable (Storable)
+
+-- | Corresponds to @rd_kafka_resp_err_t@.
+newtype ResponseError = ResponseError CInt
+  deriving newtype (Eq,Storable)
+  deriving anyclass (Exception)
+
+instance Show ResponseError where
+  showsPrec !d !e s = case e of
+    Begin -> "Begin " ++ s
+    BadMsg -> "BadMsg " ++ s
+    BadCompression -> "BadCompression " ++ s
+    Destroy -> "Destroy " ++ s
+    Fail -> "Fail " ++ s
+    Transport -> "Transport " ++ s
+    CritSysResource -> "CritSysResource " ++ s
+    Resolve -> "Resolve " ++ s
+    MsgTimedOut -> "MsgTimedOut " ++ s
+    PartitionEof -> "PartitionEof " ++ s
+    UnknownPartition -> "UnknownPartition " ++ s
+    Fs -> "Fs " ++ s
+    UnknownTopic -> "UnknownTopic " ++ s
+    AllBrokersDown -> "AllBrokersDown " ++ s
+    InvalidArg -> "InvalidArg " ++ s
+    TimedOut -> "TimedOut " ++ s
+    QueueFull -> "QueueFull " ++ s
+    IsrInsuff -> "IsrInsuff " ++ s
+    NodeUpdate -> "NodeUpdate " ++ s
+    Ssl -> "Ssl " ++ s
+    WaitCoord -> "WaitCoord " ++ s
+    UnknownGroup -> "UnknownGroup " ++ s
+    InProgress -> "InProgress " ++ s
+    PrevInProgress -> "PrevInProgress " ++ s
+    ExistingSubscription -> "ExistingSubscription " ++ s
+    AssignPartitions -> "AssignPartitions " ++ s
+    RevokePartitions -> "RevokePartitions " ++ s
+    Conflict -> "Conflict " ++ s
+    State -> "State " ++ s
+    UnknownProtocol -> "UnknownProtocol " ++ s
+    NotImplemented -> "NotImplemented " ++ s
+    Authentication -> "Authentication " ++ s
+    NoOffset -> "NoOffset " ++ s
+    Outdated -> "Outdated " ++ s
+    TimedOutQueue -> "TimedOutQueue " ++ s
+    UnsupportedFeature -> "UnsupportedFeature " ++ s
+    WaitCache -> "WaitCache " ++ s
+    Intr -> "Intr " ++ s
+    KeySerialization -> "KeySerialization " ++ s
+    ValueSerialization -> "ValueSerialization " ++ s
+    KeyDeserialization -> "KeyDeserialization " ++ s
+    ValueDeserialization -> "ValueDeserialization " ++ s
+    Partial -> "Partial " ++ s
+    ReadOnly -> "ReadOnly " ++ s
+    Noent -> "Noent " ++ s
+    Underflow -> "Underflow " ++ s
+    InvalidType -> "InvalidType " ++ s
+    Retry -> "Retry " ++ s
+    PurgeQueue -> "PurgeQueue " ++ s
+    PurgeInflight -> "PurgeInflight " ++ s
+    Fatal -> "Fatal " ++ s
+    Inconsistent -> "Inconsistent " ++ s
+    GaplessGuarantee -> "GaplessGuarantee " ++ s
+    MaxPollExceeded -> "MaxPollExceeded " ++ s
+    UnknownBroker -> "UnknownBroker " ++ s
+    NotConfigured -> "NotConfigured " ++ s
+    Fenced -> "Fenced " ++ s
+    Application -> "Application " ++ s
+    End -> "End " ++ s
+    Unknown -> "Unknown " ++ s
+    NoError -> "NoError " ++ s
+    OffsetOutOfRange -> "OffsetOutOfRange " ++ s
+    InvalidMsg -> "InvalidMsg " ++ s
+    UnknownTopicOrPart -> "UnknownTopicOrPart " ++ s
+    InvalidMsgSize -> "InvalidMsgSize " ++ s
+    LeaderNotAvailable -> "LeaderNotAvailable " ++ s
+    NotLeaderForPartition -> "NotLeaderForPartition " ++ s
+    RequestTimedOut -> "RequestTimedOut " ++ s
+    BrokerNotAvailable -> "BrokerNotAvailable " ++ s
+    ReplicaNotAvailable -> "ReplicaNotAvailable " ++ s
+    MsgSizeTooLarge -> "MsgSizeTooLarge " ++ s
+    StaleCtrlEpoch -> "StaleCtrlEpoch " ++ s
+    OffsetMetadataTooLarge -> "OffsetMetadataTooLarge " ++ s
+    NetworkException -> "NetworkException " ++ s
+    CoordinatorLoadInProgress -> "CoordinatorLoadInProgress " ++ s
+    CoordinatorNotAvailable -> "CoordinatorNotAvailable " ++ s
+    NotCoordinator -> "NotCoordinator " ++ s
+    TopicException -> "TopicException " ++ s
+    RecordListTooLarge -> "RecordListTooLarge " ++ s
+    NotEnoughReplicas -> "NotEnoughReplicas " ++ s
+    NotEnoughReplicasAfterAppend -> "NotEnoughReplicasAfterAppend " ++ s
+    InvalidRequiredAcks -> "InvalidRequiredAcks " ++ s
+    IllegalGeneration -> "IllegalGeneration " ++ s
+    InconsistentGroupProtocol -> "InconsistentGroupProtocol " ++ s
+    InvalidGroupId -> "InvalidGroupId " ++ s
+    UnknownMemberId -> "UnknownMemberId " ++ s
+    InvalidSessionTimeout -> "InvalidSessionTimeout " ++ s
+    RebalanceInProgress -> "RebalanceInProgress " ++ s
+    InvalidCommitOffsetSize -> "InvalidCommitOffsetSize " ++ s
+    TopicAuthorizationFailed -> "TopicAuthorizationFailed " ++ s
+    GroupAuthorizationFailed -> "GroupAuthorizationFailed " ++ s
+    ClusterAuthorizationFailed -> "ClusterAuthorizationFailed " ++ s
+    InvalidTimestamp -> "InvalidTimestamp " ++ s
+    UnsupportedSaslMechanism -> "UnsupportedSaslMechanism " ++ s
+    IllegalSaslState -> "IllegalSaslState " ++ s
+    UnsupportedVersion -> "UnsupportedVersion " ++ s
+    TopicAlreadyExists -> "TopicAlreadyExists " ++ s
+    InvalidPartitions -> "InvalidPartitions " ++ s
+    InvalidReplicationFactor -> "InvalidReplicationFactor " ++ s
+    InvalidReplicaAssignment -> "InvalidReplicaAssignment " ++ s
+    InvalidConfig -> "InvalidConfig " ++ s
+    NotController -> "NotController " ++ s
+    InvalidRequest -> "InvalidRequest " ++ s
+    UnsupportedForMessageFormat -> "UnsupportedForMessageFormat " ++ s
+    PolicyViolation -> "PolicyViolation " ++ s
+    OutOfOrderSequenceNumber -> "OutOfOrderSequenceNumber " ++ s
+    DuplicateSequenceNumber -> "DuplicateSequenceNumber " ++ s
+    InvalidProducerEpoch -> "InvalidProducerEpoch " ++ s
+    InvalidTxnState -> "InvalidTxnState " ++ s
+    InvalidProducerIdMapping -> "InvalidProducerIdMapping " ++ s
+    InvalidTransactionTimeout -> "InvalidTransactionTimeout " ++ s
+    ConcurrentTransactions -> "ConcurrentTransactions " ++ s
+    TransactionCoordinatorFenced -> "TransactionCoordinatorFenced " ++ s
+    TransactionalIdAuthorizationFailed -> "TransactionalIdAuthorizationFailed " ++ s
+    SecurityDisabled -> "SecurityDisabled " ++ s
+    OperationNotAttempted -> "OperationNotAttempted " ++ s
+    KafkaStorageError -> "KafkaStorageError " ++ s
+    LogDirNotFound -> "LogDirNotFound " ++ s
+    SaslAuthenticationFailed -> "SaslAuthenticationFailed " ++ s
+    UnknownProducerId -> "UnknownProducerId " ++ s
+    ReassignmentInProgress -> "ReassignmentInProgress " ++ s
+    DelegationTokenAuthDisabled -> "DelegationTokenAuthDisabled " ++ s
+    DelegationTokenNotFound -> "DelegationTokenNotFound " ++ s
+    DelegationTokenOwnerMismatch -> "DelegationTokenOwnerMismatch " ++ s
+    DelegationTokenRequestNotAllowed -> "DelegationTokenRequestNotAllowed " ++ s
+    DelegationTokenAuthorizationFailed -> "DelegationTokenAuthorizationFailed " ++ s
+    DelegationTokenExpired -> "DelegationTokenExpired " ++ s
+    InvalidPrincipalType -> "InvalidPrincipalType " ++ s
+    NonEmptyGroup -> "NonEmptyGroup " ++ s
+    GroupIdNotFound -> "GroupIdNotFound " ++ s
+    FetchSessionIdNotFound -> "FetchSessionIdNotFound " ++ s
+    InvalidFetchSessionEpoch -> "InvalidFetchSessionEpoch " ++ s
+    ListenerNotFound -> "ListenerNotFound " ++ s
+    TopicDeletionDisabled -> "TopicDeletionDisabled " ++ s
+    FencedLeaderEpoch -> "FencedLeaderEpoch " ++ s
+    UnknownLeaderEpoch -> "UnknownLeaderEpoch " ++ s
+    UnsupportedCompressionType -> "UnsupportedCompressionType " ++ s
+    StaleBrokerEpoch -> "StaleBrokerEpoch " ++ s
+    OffsetNotAvailable -> "OffsetNotAvailable " ++ s
+    MemberIdRequired -> "MemberIdRequired " ++ s
+    PreferredLeaderNotAvailable -> "PreferredLeaderNotAvailable " ++ s
+    GroupMaxSizeReached -> "GroupMaxSizeReached " ++ s
+    FencedInstanceId -> "FencedInstanceId " ++ s
+    ResponseError e -> showParen (d > 10) (showString "ResponseError " . showsPrec 11 e) s
 
 pattern Begin :: ResponseError
 pattern Begin = ResponseError ( #{const RD_KAFKA_RESP_ERR__BEGIN} )

@@ -28,6 +28,24 @@ rd_kafka_resp_err_t hsrdk_push_nonblocking_noncopying_opaque(
     RD_KAFKA_V_END);
 }
 
+rd_kafka_resp_err_t hsrdk_push_blocking_noncopying_opaque(
+  rd_kafka_t* rk,
+  char* topic,
+  char* base,
+  HsInt off,
+  HsInt len,
+  void* stable) {
+  void* buf = (void*)(base + off);
+  // The message is in pinned memory, so making a copy would be silly.
+  return rd_kafka_producev(
+    rk,
+    RD_KAFKA_V_TOPIC(topic),
+    RD_KAFKA_V_VALUE(buf,(size_t)len),
+    RD_KAFKA_V_OPAQUE(stable),
+    RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_BLOCK),
+    RD_KAFKA_V_END);
+}
+
 rd_kafka_resp_err_t hsrdk_push_nonblocking_copying_opaque(
   rd_kafka_t* rk,
   char* topic,

@@ -27,5 +27,8 @@ stack.yaml
 test_results/**
 uncommitted/
 produce-from-stdin.o
+produce-from-stdin.o
 produce-from-stdin.hi
 produce-from-stdin
+consume-to-stdout-high-level
+produce-from-stdin-high-level

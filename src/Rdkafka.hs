@@ -23,6 +23,7 @@ module Rdkafka
   , new
   , flush
   , destroy
+  , consumerClose
   , subscribe
   , messageDestroy
   , newTopicNew
@@ -41,6 +42,7 @@ module Rdkafka
   , queuePoll
     -- * Produce
   , produceBytes
+  , produceBytesBlocking
   , produceBytesOpaque
     -- * Wrapper
   , wrapDeliveryReportMessageCallback
@@ -71,6 +73,7 @@ import Rdkafka.Types (Message,NewTopic,AdminOptions,Queue,Event)
 import Rdkafka.Types (ResponseError,Handle,ConfigurationResult)
 import Rdkafka.Types (TopicPartitionList,TopicPartition)
 
+import qualified Data.Bytes as Bytes
 import qualified Data.Primitive as PM
 import qualified Foreign.C.Types
 import qualified GHC.Exts as Exts
@@ -138,7 +141,7 @@ queuePoll !tpl !ms =
 -- requests are completed. Uses the safe FFI.
 flush ::
      Ptr Handle -- ^ Kafka handle
-  -> Int -- ^ Milliseconds to wait for message, @-1@ means wait indefinitely
+  -> Int -- ^ Milliseconds to wait for flush to complete
   -> IO ResponseError
 flush !tpl !ms =
   safeRdKafkaFlush tpl (fromIntegral @Int @CInt ms)
@@ -170,6 +173,8 @@ versionByteArray = do
 -- | Calls @rd_kafka_consumer_poll@. Blocks until a message is available
 -- or until the specified number of milliseconds have elapsed. Uses the
 -- safe FFI.
+--
+-- This returns @NULL@ to indicate timeout.
 consumerPoll ::
      Ptr Handle -- ^ Kafka handle
   -> Int -- ^ Milliseconds to wait for message, @-1@ means wait indefinitely
@@ -198,6 +203,7 @@ poll !tpl !ms =
 -- | Calls @rd_kafka_poll@, returning immidiately if no messages
 -- are on the queue. This is more efficient that calling 'poll' with
 -- the timeout set to zero since this variant uses the unsafe FFI.
+-- Returns the number of events served.
 pollNonblocking ::
      Ptr Handle -- ^ Kafka handle
   -> IO Int
@@ -236,13 +242,18 @@ configurationSetDeliveryReportMessageCallback ::
 configurationSetDeliveryReportMessageCallback =
   rdKafkaConfSetDeliveryReportMessageCallback
 
-anchorPinnedAndPush ::
+-- Create a StablePtr that keeps a pinned byte array live for the
+-- duration of message delivery. If the produce succeeds, the StablePtr
+-- goes into the @_private@ field of the @rd_kafka_message_t@. If
+-- the produce fails (any status other than @RD_KAFKA_RESP_ERR_NO_ERROR@),
+-- the StablePtr is destroyed immidiately. 
+anchorPinnedAndPushNonblocking ::
      Ptr Handle
   -> (# (# #) | Any #)
   -> ManagedCString
-  -> Bytes
+  -> Bytes -- precondition: payload is pinned
   -> IO ResponseError
-anchorPinnedAndPush !h extra (ManagedCString (ByteArray topic# ))
+anchorPinnedAndPushNonblocking !h extra (ManagedCString (ByteArray topic# ))
     (Bytes (ByteArray arr# ) off len) = do
   -- TODO: Use mask to prevent memory leaks
   stable <- newStablePtr $! Opaque extra arr#
@@ -253,6 +264,27 @@ anchorPinnedAndPush !h extra (ManagedCString (ByteArray topic# ))
     _ -> freeStablePtr stable
   pure e
 
+-- Variant of anchorPinnedAndPushNonblocking that blocks.
+anchorPinnedAndPushBlocking ::
+     Ptr Handle
+  -> (# (# #) | Any #)
+  -> ManagedCString
+  -> Bytes -- precondition: payload is pinned
+  -> IO ResponseError
+anchorPinnedAndPushBlocking !h extra (ManagedCString (ByteArray topic# ))
+    (Bytes (ByteArray arr# ) off len) = do
+  -- TODO: Use mask to prevent memory leaks
+  stable <- newStablePtr $! Opaque extra arr#
+  e <- pushBlockingNoncopyingOpaque h topic# arr# off len
+    (MessageOpaque (castStablePtrToPtr stable))
+  case e of
+    ResponseError.NoError -> pure ()
+    _ -> freeStablePtr stable
+  pure e
+
+-- | Variant of @produceBytes@ that associates an opaque value with the
+-- sent message. The opaque value can be accessed in the callback by calling
+-- 'destroyMessageOpaque'.
 produceBytesOpaque ::
      Ptr Handle -- ^ Handle to kakfa cluster
   -> ManagedCString -- ^ Topic name
@@ -261,7 +293,7 @@ produceBytesOpaque ::
   -> IO ResponseError
 produceBytesOpaque !h !topic bs@(Bytes arr@(ByteArray arr# ) off len) opaque =
   case PM.isByteArrayPinned arr of
-    True -> anchorPinnedAndPush h (# | opaque #) topic bs
+    True -> anchorPinnedAndPushNonblocking h (# | opaque #) topic bs
     False -> do
       let !(ByteArray emptyArr#) = mempty
       -- TODO: use mask to prevent memory leaks
@@ -277,7 +309,9 @@ produceBytesOpaque !h !topic bs@(Bytes arr@(ByteArray arr# ) off len) opaque =
 
 -- | Push a message to the provided topic. None of the arguments need
 -- to be pinned, although if the message is pinned, copying is avoided.
--- Calls @rd_kafka_producev@.
+-- Calls @rd_kafka_producev@. This is nonblocking. If rdkafka's message
+-- queue is full, this returns @RD_KAFKA_RESP_ERR__QUEUE_FULL@. See
+-- 'produceBytesBlocking' for a variant that sets @RD_KAFKA_MSG_F_BLOCK@.
 produceBytes ::
      Ptr Handle -- ^ Handle to kakfa cluster
   -> ManagedCString -- ^ Topic name
@@ -285,10 +319,23 @@ produceBytes ::
   -> IO ResponseError
 produceBytes !h !topic bs@(Bytes arr@(ByteArray arr# ) off len) =
   case PM.isByteArrayPinned arr of
-    True -> anchorPinnedAndPush h (# (# #) | #) topic bs
+    True -> anchorPinnedAndPushNonblocking h (# (# #) | #) topic bs
     False -> pushNonblockingCopyingNoOpaque h topic# arr# off len
   where
   !(ManagedCString (ByteArray topic# )) = topic
+
+-- | Variant of 'produceBytes' that sets @RD_KAFKA_MSG_F_BLOCK@. Consequently,
+-- this never returns @RD_KAFKA_RESP_ERR__QUEUE_FULL@. 
+produceBytesBlocking ::
+     Ptr Handle -- ^ Handle to kakfa cluster
+  -> ManagedCString -- ^ Topic name
+  -> Bytes -- ^ Message
+  -> IO ResponseError
+produceBytesBlocking !h !topic !b0 =
+  anchorPinnedAndPushBlocking h (# (# #) | #) topic bs
+  where
+  !(ManagedCString (ByteArray topic# )) = topic
+  !bs@(Bytes arr@(ByteArray arr# ) off len) = Bytes.pin b0
 
 -- | Recover the opaque object from in a callback, dissolving the @StablePtr@
 -- that had been used to protect the opaque object or the payload from garbage
@@ -313,7 +360,7 @@ destroyMessageOpaque (MessageOpaque p) = if p == nullPtr
 -- useful when the caller does not make use of opaque objects. This still
 -- dissolves the association between a @StablePtr@ and its target, and it
 -- is important to call either this or 'destroyMessageOpaque' in every delivery
--- callback, lest memory leak.
+-- callback, lest the application leak memory.
 destroyMessageOpaque_ :: MessageOpaque -> IO ()
 destroyMessageOpaque_ (MessageOpaque p) = if p == nullPtr
   then pure ()
@@ -388,6 +435,17 @@ foreign import ccall unsafe "hsrdk_create_topic"
     -> Ptr Queue -- ^ Queue to emit result on.
     -> IO ()
 
+-- Blocking call, safe FFI.
+foreign import ccall safe "hsrdk_push_blocking_noncopying_opaque"
+  pushBlockingNoncopyingOpaque ::
+       Ptr Handle
+    -> ByteArray#
+    -> ByteArray#
+    -> Int
+    -> Int
+    -> MessageOpaque
+    -> IO ResponseError
+
 foreign import ccall unsafe "hsrdk_push_nonblocking_noncopying_opaque"
   pushNonblockingNoncopyingOpaque ::
        Ptr Handle
@@ -458,6 +516,12 @@ foreign import ccall unsafe "rd_kafka_topic_partition_list_destroy"
   topicPartitionListDestroy ::
        Ptr TopicPartitionList -- ^ Topics
     -> IO ()
+
+-- | Calls @rd_kafka_consumer_close@ using the safe FFI.
+foreign import ccall safe "rd_kafka_consumer_close"
+  consumerClose ::
+       Ptr Handle -- ^ Kafka handle
+    -> IO ResponseError
 
 -- | Calls @rd_kafka_destroy@ using the safe FFI.
 -- Blocks until any in-flight messages have had callbacks called.

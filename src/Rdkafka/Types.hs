@@ -34,11 +34,9 @@ import Foreign.C.String (CString)
 import Foreign.C.String.Managed (ManagedCString)
 import Foreign.Storable (Storable)
 
-newtype Partition = Partition Int32
+import Rdkafka.Constant.ResponseError (ResponseError(..))
 
--- | Corresponds to @rd_kafka_resp_err_t@.
-newtype ResponseError = ResponseError CInt
-  deriving newtype (Eq,Storable)
+newtype Partition = Partition Int32
 
 -- | Corresponds to @rd_kafka_conf_res_t@.
 newtype ConfigurationResult = ConfigurationResult CInt
