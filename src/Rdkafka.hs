@@ -34,6 +34,7 @@ module Rdkafka
   , version
   , versionString
   , versionByteArray
+  , versionByteString
     -- * Poll
   , consumerPoll
   , consumerPollNonblocking
@@ -55,6 +56,7 @@ module Rdkafka
   ) where
 
 import Control.Exception (Exception,toException)
+import Data.ByteString (ByteString)
 import Data.Bytes.Types (Bytes(Bytes))
 import Data.Kind (Type)
 import Data.Primitive (ByteArray(ByteArray),MutableByteArray(MutableByteArray))
@@ -74,6 +76,7 @@ import Rdkafka.Types (ResponseError,Handle,ConfigurationResult)
 import Rdkafka.Types (TopicPartitionList,TopicPartition)
 
 import qualified Data.Bytes as Bytes
+import qualified Data.ByteString.Unsafe as ByteString
 import qualified Data.Primitive as PM
 import qualified Foreign.C.Types
 import qualified GHC.Exts as Exts
@@ -169,6 +172,15 @@ versionByteArray = do
   n <- hsrdkCopyVersionString dst#
   shrinkMutableByteArray dst n
   PM.unsafeFreezeByteArray dst
+
+-- | Variant of 'versionString' that calls @strlen@ and wraps up the
+-- unmanaged memory backing it as a 'ByteString'.
+versionByteString :: IO ByteString
+versionByteString = do
+  ptr <- versionString
+  -- TODO: With sufficiently new versions of bytestring, use
+  -- unsafePackAddress instead.
+  ByteString.unsafePackCString ptr
 
 -- | Calls @rd_kafka_consumer_poll@. Blocks until a message is available
 -- or until the specified number of milliseconds have elapsed. Uses the

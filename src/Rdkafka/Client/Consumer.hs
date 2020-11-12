@@ -1,27 +1,35 @@
 {-# language BangPatterns #-}
 {-# language LambdaCase #-}
 {-# language MagicHash #-}
+{-# language TypeApplications #-}
 
 module Rdkafka.Client.Consumer
   ( subscribe
   , poll
+  , pollMany
   , close
   ) where
 
-import Data.Functor (($>))
+import Control.Exception (toException)
+import Control.Monad.ST.Run (runPrimArrayST)
 import Data.Bytes (Bytes)
+import Data.Functor (($>))
+import Data.Int (Int64)
+import Data.Primitive (PrimArray)
+import Data.Word (Word64)
 import Foreign.C.String.Managed (ManagedCString)
 import Foreign.Ptr (Ptr,nullPtr)
+import GHC.Clock (getMonotonicTimeNSec)
+import GHC.Exts (raiseIO#)
+import GHC.IO (IO(IO))
 import Rdkafka.Client.Types (Consumer(Consumer))
 import Rdkafka.Types (ResponseError,Message)
-import GHC.IO (IO(IO))
-import GHC.Exts (raiseIO#)
-import Control.Exception (toException)
 
 import qualified Rdkafka as X
 import qualified Rdkafka.Constant.ResponseError as ResponseError
 import qualified Rdkafka.Constant.Partition as Partition
 import qualified Rdkafka.Struct.Message as Message
+import qualified Data.Primitive as PM
 
 -- | Subscribe to a single topic on partition @RD_KAFKA_PARTITION_UA@.
 subscribe ::
@@ -55,6 +63,57 @@ poll (Consumer p) = go where
           X.messageDestroy m
           pure (Left e)
 
+-- | Calls @rd_kafka_consumer_poll@ in a loop. If any of the calls return
+-- a fatal error message, this discards any accumulated messages and returns
+-- the error message. This always blocks until receiving at least one message.
+-- After that, this keeps going until either (A) the maximum number
+-- of messages has been received or (B) at least one second has elapsed
+-- since the start of this function. This specification guarantees that
+-- this function only blocks for more than one second if there are no
+-- enqueued messages.
+--
+-- The caller must destroy all of the resulting messages with @messageDestroy@.
+--
+-- Note: due to implementation details, this might only accumulate messages for
+-- 999ms rather than a full second.
+pollMany ::
+     Consumer
+  -> Int -- ^ Maximum number of messages to receive
+  -> IO (Either ResponseError (PrimArray (Ptr Message)))
+pollMany c@(Consumer !p) !maxMsgs = do
+  !start <- fromIntegral @Word64 @Int64 <$> getMonotonicTimeNSec
+  poll c >>= \case
+    Left err -> pure (Left err)
+    Right msg0 -> do
+      !now0 <- fromIntegral @Word64 @Int64 <$> getMonotonicTimeNSec
+      let !end = start + 1000000000
+      let !nanosRemaining0 = end - now0
+      if nanosRemaining0 < 1000000 || maxMsgs < 2
+        then pure $! Right $! inlineSingletonPrimArray msg0
+        else do
+          !dst <- PM.newPrimArray maxMsgs
+          PM.writePrimArray dst 0 msg0
+          let finish !len = do
+                PM.shrinkMutablePrimArray dst len
+                dst' <- PM.unsafeFreezePrimArray dst
+                pure (Right dst')
+          let go !ix !nanosRemaining = if ix < maxMsgs && nanosRemaining >= 1000000
+                then do
+                  m <- X.consumerPoll p
+                    (fromIntegral @Int64 @Int (div nanosRemaining 1000000))
+                  if m == nullPtr
+                    then finish ix
+                    else Message.peekError m >>= \case
+                      ResponseError.NoError -> do
+                        PM.writePrimArray dst ix m
+                        !now <- fromIntegral @Word64 @Int64 <$> getMonotonicTimeNSec
+                        go (ix + 1) (end - now)
+                      e -> do
+                        X.messageDestroy m
+                        pure (Left e)
+                else finish ix
+          go 1 nanosRemaining0
+
 -- | Calls @rd_kafka_consumer_close@ and @rd_kafka_destroy@. The @librdkafka@
 -- specifies that @rd_kafka_consumer_close@ will
 -- "block until the consumer has revoked its assignment, calling the
@@ -65,3 +124,9 @@ close :: Consumer -> IO (Either ResponseError ())
 close (Consumer h) = X.consumerClose h >>= \case
   ResponseError.NoError -> X.destroy h $> Right ()
   e -> pure (Left e)
+
+inlineSingletonPrimArray :: Ptr Message -> PrimArray (Ptr Message)
+inlineSingletonPrimArray !msg = runPrimArrayST $ do
+  dst <- PM.newPrimArray 1
+  PM.writePrimArray dst 0 msg
+  PM.unsafeFreezePrimArray dst
