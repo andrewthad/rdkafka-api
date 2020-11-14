@@ -21,6 +21,7 @@ library
     Rdkafka.Constant.ResponseError
     Rdkafka.Constant.Type
     Rdkafka.Struct.Message
+    Rdkafka.Struct.ValueUnion
     Rdkafka.Types
     -- TODO: Move these into different library.
     Rdkafka.Client

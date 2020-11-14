@@ -19,6 +19,7 @@ module Rdkafka.Types
   , Queue
   , TopicPartition
   , TopicPartitionList
+  , ValueUnion
     -- * Special Types
   , MessageOpaque(..)
     -- * Callbacks
@@ -57,6 +58,9 @@ data Configuration
 
 -- | Corresponds to @rd_kafka_message_t@. Phantom type for pointers.
 data Message
+
+-- | Corresponds to @rd_kafka_vu_t@. Phantom type for pointers.
+data ValueUnion
 
 -- | Corresponds to @rd_kafka_topic_partition_list_t@. Phantom type for pointers.
 data TopicPartitionList

@@ -79,6 +79,7 @@ import qualified Data.Bytes as Bytes
 import qualified Data.ByteString.Unsafe as ByteString
 import qualified Data.Primitive as PM
 import qualified Foreign.C.Types
+import qualified Foreign.C.String.Managed as ManagedCString
 import qualified GHC.Exts as Exts
 import qualified Rdkafka.Constant.ResponseError as ResponseError
 import qualified Rdkafka.Types as T
@@ -280,13 +281,13 @@ anchorPinnedAndPushNonblocking !h extra (ManagedCString (ByteArray topic# ))
 anchorPinnedAndPushBlocking ::
      Ptr Handle
   -> (# (# #) | Any #)
-  -> ManagedCString
+  -> ManagedCString -- precondition: pinned
   -> Bytes -- precondition: payload is pinned
   -> IO ResponseError
 anchorPinnedAndPushBlocking !h extra (ManagedCString (ByteArray topic# ))
     (Bytes (ByteArray arr# ) off len) = do
   -- TODO: Use mask to prevent memory leaks
-  stable <- newStablePtr $! Opaque extra arr#
+  stable <- newStablePtr $! OpaqueWithTopic extra arr# topic#
   e <- pushBlockingNoncopyingOpaque h topic# arr# off len
     (MessageOpaque (castStablePtrToPtr stable))
   case e of
@@ -337,16 +338,18 @@ produceBytes !h !topic bs@(Bytes arr@(ByteArray arr# ) off len) =
   !(ManagedCString (ByteArray topic# )) = topic
 
 -- | Variant of 'produceBytes' that sets @RD_KAFKA_MSG_F_BLOCK@. Consequently,
--- this never returns @RD_KAFKA_RESP_ERR__QUEUE_FULL@. 
+-- this never returns @RD_KAFKA_RESP_ERR__QUEUE_FULL@.
+--
+-- This makes a pinned copy of the topic name if the topic name was
+-- not already pinned.
 produceBytesBlocking ::
      Ptr Handle -- ^ Handle to kakfa cluster
   -> ManagedCString -- ^ Topic name
   -> Bytes -- ^ Message
   -> IO ResponseError
 produceBytesBlocking !h !topic !b0 =
-  anchorPinnedAndPushBlocking h (# (# #) | #) topic bs
+  anchorPinnedAndPushBlocking h (# (# #) | #) (ManagedCString.pin topic) bs
   where
-  !(ManagedCString (ByteArray topic# )) = topic
   !bs@(Bytes arr@(ByteArray arr# ) off len) = Bytes.pin b0
 
 -- | Recover the opaque object from in a callback, dissolving the @StablePtr@
@@ -433,6 +436,14 @@ data ErrorBufferMissingNulException = ErrorBufferMissingNulException
 data Opaque = Opaque
   (# (# #) | Any #) -- Optionally, the opaque value for the callback
   ByteArray# -- A reference to the payload used to keep it live
+
+-- Internal use only. Does not correspond to a type from @librdkafka@.
+-- This variant of Opaque is needed for the blocking produce functions,
+-- which need to be certain that they keep the topic live.
+data OpaqueWithTopic = OpaqueWithTopic
+  (# (# #) | Any #) -- Optionally, the opaque value for the callback
+  ByteArray# -- A reference to the payload used to keep it live
+  ByteArray# -- A reference to the topic name used to keep it live
 
 foreign import ccall unsafe "hsrdk_copy_version_string"
   hsrdkCopyVersionString :: MutableByteArray# s -> IO Int
