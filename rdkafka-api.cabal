@@ -1,11 +1,14 @@
 cabal-version: 2.4
-name:                rdkafka-api
-version:             0.1.0.0
-license-file:        LICENSE
-author:              Andrew Martin
-maintainer:          andrew.thaddeus@gmail.com
--- copyright:
--- category:
+name: rdkafka-api
+version: 0.1.0.0
+license-file: LICENSE
+author: Andrew Martin
+maintainer:andrew.thaddeus@gmail.com
+synopsis: Low-level bindings to librdkafka  
+description:
+  Requires librdkafka 1.5.2 or greater.
+copyright: 2020 Andrew Martin
+category: Data
 build-type: Simple
 extra-source-files:
   README.md
