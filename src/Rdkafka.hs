@@ -19,6 +19,7 @@ module Rdkafka
   , topicPartitionListNew
   , topicPartitionListAdd
   , topicPartitionListDestroy
+  , topicName
   , pollSetConsumer
   , new
   , flush
@@ -73,7 +74,7 @@ import Rdkafka.Types (DeliveryReportMessageCallback,Partition(..))
 import Rdkafka.Types (EventType)
 import Rdkafka.Types (Message,NewTopic,AdminOptions,Queue,Event)
 import Rdkafka.Types (ResponseError,Handle,ConfigurationResult)
-import Rdkafka.Types (TopicPartitionList,TopicPartition)
+import Rdkafka.Types (TopicPartitionList,TopicPartition,Topic)
 
 import qualified Data.Bytes as Bytes
 import qualified Data.ByteString.Unsafe as ByteString
@@ -533,6 +534,12 @@ foreign import ccall unsafe "rd_kafka_subscribe"
        Ptr Handle -- ^ Kafka handle
     -> Ptr TopicPartitionList -- ^ Topics
     -> IO ResponseError
+
+-- | Calls @rd_kafka_topic_name@.
+foreign import ccall unsafe "rd_kafka_topic_name"
+  topicName ::
+       Ptr Topic -- ^ Topic
+    -> IO (Ptr CChar)
 
 -- | Calls @rd_kafka_topic_partition_list_destroy@.
 foreign import ccall unsafe "rd_kafka_topic_partition_list_destroy"

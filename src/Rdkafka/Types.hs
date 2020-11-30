@@ -17,6 +17,7 @@ module Rdkafka.Types
   , Message
   , NewTopic
   , Queue
+  , Topic
   , TopicPartition
   , TopicPartitionList
   , ValueUnion
@@ -70,6 +71,9 @@ data NewTopic
 
 -- | Corresponds to @rd_kafka_topic_partition_t@. Phantom type for pointers.
 data TopicPartition
+
+-- | Corresponds to @rd_kafka_topic_t@. Phantom type for pointers.
+data Topic
 
 -- | Corresponds to @rd_kafka_AdminOptions_t@. Phantom type for pointers.
 data AdminOptions
