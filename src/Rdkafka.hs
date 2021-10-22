@@ -40,7 +40,6 @@ module Rdkafka
   , consumerPoll
   , consumerPollNonblocking
   , poll
-  , pollNonblocking
   , queuePoll
     -- * Produce
   , produceBytes
@@ -214,15 +213,6 @@ poll ::
   -> IO Int
 poll !tpl !ms =
   fmap (fromIntegral @CInt @Int) (safeRdKafkaPoll tpl (fromIntegral @Int @CInt ms))
-
--- | Calls @rd_kafka_poll@, returning immidiately if no messages
--- are on the queue. This is more efficient that calling 'poll' with
--- the timeout set to zero since this variant uses the unsafe FFI.
--- Returns the number of events served.
-pollNonblocking ::
-     Ptr Handle -- ^ Kafka handle
-  -> IO Int
-pollNonblocking !tpl = fmap (fromIntegral @CInt @Int) (unsafeRdKafkaPoll tpl 0)
 
 -- | Sets a configuration property. Calls @rd_kafka_conf_set@. If the
 -- result is not @RD_KAFKA_CONF_OK@, the caller should call
@@ -636,12 +626,6 @@ foreign import ccall unsafe "rd_kafka_consumer_poll"
 
 foreign import ccall safe "rd_kafka_poll"
   safeRdKafkaPoll ::
-       Ptr Handle
-    -> CInt
-    -> IO CInt
-
-foreign import ccall unsafe "rd_kafka_poll"
-  unsafeRdKafkaPoll ::
        Ptr Handle
     -> CInt
     -> IO CInt

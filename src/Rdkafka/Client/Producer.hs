@@ -6,7 +6,7 @@ module Rdkafka.Client.Producer
   ( bytes
   , flush
   , close
-  , pollNonblocking
+  , poll
   ) where
 
 import Data.Bytes (Bytes)
@@ -53,9 +53,10 @@ flush (Producer h) = X.flush h 60000 >>= \case
 close :: Producer -> IO ()
 close (Producer h) = X.destroy h
 
--- | Calls @rd_kafka_poll@, returning immidiately if no messages
--- are on the queue. Returns the number of events served.
-pollNonblocking ::
+-- | Calls @rd_kafka_poll@, returning immidiately if no messages are
+-- on the queue Returns the number of events served. This does not wait for
+-- Use this in a loop with @threadDelay@ between invocations.
+poll ::
      Producer
   -> IO Int
-pollNonblocking (Producer h) = X.pollNonblocking h
+poll (Producer h) = X.poll h 0
