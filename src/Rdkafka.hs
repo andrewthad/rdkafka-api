@@ -48,6 +48,7 @@ module Rdkafka
   , produceBytesOpaque
     -- * Wrapper
   , wrapDeliveryReportMessageCallback
+  , wrapLogCallback
     -- * Auxiliary Functions
     -- | These functions are not part of @librdkafka@, but they are
     -- useful when using this library.
@@ -658,8 +659,15 @@ foreign import ccall safe "rd_kafka_flush"
     -> IO ResponseError
 
 -- | Wrap a delivery report message callback. This allocates storage that
--- is not reclaimed until @freeHaskellFunPtr@ is called. 
+-- is not reclaimed until @freeHaskellFunPtr@ is called.
 foreign import ccall "wrapper"
   wrapDeliveryReportMessageCallback ::
        DeliveryReportMessageCallback
     -> IO (FunPtr DeliveryReportMessageCallback)
+
+-- | Wrap a log callback. This allocates storage that
+-- is not reclaimed until @freeHaskellFunPtr@ is called.
+foreign import ccall "wrapper"
+  wrapLogCallback ::
+       LogCallback
+    -> IO (FunPtr LogCallback)

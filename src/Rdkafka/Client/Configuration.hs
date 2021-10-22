@@ -12,7 +12,7 @@ module Rdkafka.Client.Configuration
   , consumer
     -- * Create Configuration
   , set
-  , setLogcallback
+  , setLogCallback
   , setDeliveryReportMessageCallback
   ) where
 
@@ -128,10 +128,10 @@ set !name !val = Configure
   )
 
 -- | Calls @rd_kafka_conf_set_log_cb@.
-setLogcallback ::
+setLogCallback ::
      FunPtr LogCallback -- ^ Callback
   -> Configure ()
-setLogcallback !cb = Configure
+setLogCallback !cb = Configure
   (\ !conf !_ -> fmap Just (X.configurationSetLogCallback conf cb)
   )
 
