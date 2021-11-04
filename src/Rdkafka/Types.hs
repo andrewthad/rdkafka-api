@@ -14,6 +14,7 @@ module Rdkafka.Types
   , Configuration
   , Event
   , Handle
+  , Headers
   , Message
   , NewTopic
   , Queue
@@ -53,6 +54,9 @@ newtype Type = Type CInt
 
 -- | Corresponds to @rd_kafka_t@. Phantom type for pointers.
 data Handle
+
+-- | Corresponds to @rd_kafka_headers_t@. Phantom type for pointers.
+data Headers
 
 -- | Corresponds to @rd_kafka_conf_t@. Phantom type for pointers.
 data Configuration
