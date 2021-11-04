@@ -45,6 +45,10 @@ module Rdkafka
   , produceBytes
   , produceBytesBlocking
   , produceBytesOpaque
+    -- * Headers
+  , headersDestroy
+  , headersNew
+  , headerAdd
     -- * Wrapper
   , wrapDeliveryReportMessageCallback
   , wrapLogCallback
@@ -61,6 +65,7 @@ import Data.ByteString (ByteString)
 import Data.Bytes.Types (Bytes(Bytes))
 import Data.Kind (Type)
 import Data.Primitive (ByteArray(ByteArray),MutableByteArray(MutableByteArray))
+import Data.Void (Void)
 import Data.Word (Word8,Word32)
 import Foreign.C.String.Managed (ManagedCString(ManagedCString))
 import Foreign.C.Types (CInt,CSize,CChar)
@@ -71,10 +76,11 @@ import GHC.Stable (StablePtr(StablePtr),freeStablePtr,castStablePtrToPtr,newStab
 import GHC.Stable (castPtrToStablePtr,deRefStablePtr)
 import Rdkafka.Types (Configuration,LogCallback,MessageOpaque(..))
 import Rdkafka.Types (DeliveryReportMessageCallback,Partition(..))
-import Rdkafka.Types (EventType)
+import Rdkafka.Types (EventType,Headers)
 import Rdkafka.Types (Message,NewTopic,AdminOptions,Queue,Event)
 import Rdkafka.Types (ResponseError,Handle,ConfigurationResult)
 import Rdkafka.Types (TopicPartitionList,TopicPartition,Topic)
+import System.Posix.Types (CSsize(CSsize))
 
 import qualified Data.Bytes as Bytes
 import qualified Data.ByteString.Unsafe as ByteString
@@ -257,12 +263,16 @@ anchorPinnedAndPushNonblocking ::
   -> (# (# #) | Any #)
   -> ManagedCString
   -> Bytes -- precondition: payload is pinned
+  -> Bytes -- ^ Key, empty bytes converted to null key
+  -> Ptr Headers
   -> IO ResponseError
-anchorPinnedAndPushNonblocking !h extra (ManagedCString (ByteArray topic# ))
-    (Bytes (ByteArray arr# ) off len) = do
+anchorPinnedAndPushNonblocking !h extra
+    (ManagedCString (ByteArray topic# ))
+    (Bytes (ByteArray parr# ) poff plen)
+    (Bytes (ByteArray karr# ) koff klen) !hdrs = do
   -- TODO: Use mask to prevent memory leaks
-  stable <- newStablePtr $! Opaque extra arr#
-  e <- pushNonblockingNoncopyingOpaque h topic# arr# off len
+  stable <- newStablePtr $! Opaque extra parr#
+  e <- pushNonblockingNoncopyingOpaque h topic# parr# poff plen karr# koff klen hdrs
     (MessageOpaque (castStablePtrToPtr stable))
   case e of
     ResponseError.NoError -> pure ()
@@ -275,12 +285,15 @@ anchorPinnedAndPushBlocking ::
   -> (# (# #) | Any #)
   -> ManagedCString -- precondition: pinned
   -> Bytes -- precondition: payload is pinned
+  -> Bytes -- Key, empty bytes converted to null key, precondition: pinned
+  -> Ptr Headers
   -> IO ResponseError
 anchorPinnedAndPushBlocking !h extra (ManagedCString (ByteArray topic# ))
-    (Bytes (ByteArray arr# ) off len) = do
+    (Bytes (ByteArray arr# ) off len)
+    (Bytes (ByteArray key# ) koff klen) !hdrs = do
   -- TODO: Use mask to prevent memory leaks
   stable <- newStablePtr $! OpaqueWithTopic extra arr# topic#
-  e <- pushBlockingNoncopyingOpaque h topic# arr# off len
+  e <- pushBlockingNoncopyingOpaque h topic# arr# off len key# koff klen hdrs
     (MessageOpaque (castStablePtrToPtr stable))
   case e of
     ResponseError.NoError -> pure ()
@@ -294,16 +307,20 @@ produceBytesOpaque ::
      Ptr Handle -- ^ Handle to kakfa cluster
   -> ManagedCString -- ^ Topic name
   -> Bytes -- ^ Message
+  -> Bytes -- ^ Key, empty bytes converted to null key
+  -> Ptr Headers
   -> Any -- ^ Opaque value for callback
   -> IO ResponseError
-produceBytesOpaque !h !topic bs@(Bytes arr@(ByteArray arr# ) off len) opaque =
+produceBytesOpaque !h !topic
+  bs@(Bytes arr@(ByteArray arr# ) off len)
+  key@(Bytes (ByteArray karr#) koff klen) !hdrs opaque =
   case PM.isByteArrayPinned arr of
-    True -> anchorPinnedAndPushNonblocking h (# | opaque #) topic bs
+    True -> anchorPinnedAndPushNonblocking h (# | opaque #) topic bs key hdrs
     False -> do
       let !(ByteArray emptyArr#) = mempty
       -- TODO: use mask to prevent memory leaks
       stable <- newStablePtr $! Opaque (# | opaque #) emptyArr#
-      e <- pushNonblockingCopyingOpaque h topic# arr# off len
+      e <- pushNonblockingCopyingOpaque h topic# arr# off len karr# koff klen hdrs
         (MessageOpaque (castStablePtrToPtr stable))
       case e of
         ResponseError.NoError -> pure ()
@@ -321,11 +338,15 @@ produceBytes ::
      Ptr Handle -- ^ Handle to kakfa cluster
   -> ManagedCString -- ^ Topic name
   -> Bytes -- ^ Message
+  -> Bytes -- ^ Key, empty bytes converted to null key
+  -> Ptr Headers -- ^ Headers
   -> IO ResponseError
-produceBytes !h !topic bs@(Bytes arr@(ByteArray arr# ) off len) =
+produceBytes !h !topic
+  bs@(Bytes arr@(ByteArray arr# ) off len)
+  key@(Bytes (ByteArray karr#) koff klen) !hdrs =
   case PM.isByteArrayPinned arr of
-    True -> anchorPinnedAndPushNonblocking h (# (# #) | #) topic bs
-    False -> pushNonblockingCopyingNoOpaque h topic# arr# off len
+    True -> anchorPinnedAndPushNonblocking h (# (# #) | #) topic bs key hdrs
+    False -> pushNonblockingCopyingNoOpaque h topic# arr# off len karr# koff klen hdrs
   where
   !(ManagedCString (ByteArray topic# )) = topic
 
@@ -338,11 +359,14 @@ produceBytesBlocking ::
      Ptr Handle -- ^ Handle to kakfa cluster
   -> ManagedCString -- ^ Topic name
   -> Bytes -- ^ Message
+  -> Bytes -- ^ Key, empty bytes converted to null key
+  -> Ptr Headers -- ^ Headers
   -> IO ResponseError
-produceBytesBlocking !h !topic !b0 =
-  anchorPinnedAndPushBlocking h (# (# #) | #) (ManagedCString.pin topic) bs
+produceBytesBlocking !h !topic !b0 !key0 !hdrs =
+  anchorPinnedAndPushBlocking h (# (# #) | #) (ManagedCString.pin topic) b1 key1 hdrs
   where
-  !bs@(Bytes arr@(ByteArray arr# ) off len) = Bytes.pin b0
+  !b1 = Bytes.pin b0
+  !key1 = Bytes.pin key0
 
 -- | Recover the opaque object from in a callback, dissolving the @StablePtr@
 -- that had been used to protect the opaque object or the payload from garbage
@@ -455,19 +479,27 @@ foreign import ccall safe "hsrdk_push_blocking_noncopying_opaque"
   pushBlockingNoncopyingOpaque ::
        Ptr Handle
     -> ByteArray#
-    -> ByteArray#
-    -> Int
-    -> Int
+    -> ByteArray# -- message
+    -> Int -- message offset
+    -> Int -- message length
+    -> ByteArray# -- key
+    -> Int -- key offset
+    -> Int -- key length
+    -> Ptr Headers
     -> MessageOpaque
     -> IO ResponseError
 
 foreign import ccall unsafe "hsrdk_push_nonblocking_noncopying_opaque"
   pushNonblockingNoncopyingOpaque ::
        Ptr Handle
-    -> ByteArray#
-    -> ByteArray#
-    -> Int
-    -> Int
+    -> ByteArray# -- topic
+    -> ByteArray# -- message
+    -> Int -- message offset
+    -> Int -- message length
+    -> ByteArray# -- key
+    -> Int -- key offset
+    -> Int -- key length
+    -> Ptr Headers
     -> MessageOpaque
     -> IO ResponseError
 
@@ -475,9 +507,13 @@ foreign import ccall unsafe "hsrdk_push_nonblocking_copying_opaque"
   pushNonblockingCopyingOpaque ::
        Ptr Handle
     -> ByteArray#
-    -> ByteArray#
-    -> Int
-    -> Int
+    -> ByteArray# -- message
+    -> Int -- message offset
+    -> Int -- message length
+    -> ByteArray# -- key
+    -> Int -- key offset
+    -> Int -- key length
+    -> Ptr Headers
     -> MessageOpaque
     -> IO ResponseError
 
@@ -485,9 +521,13 @@ foreign import ccall unsafe "hsrdk_push_nonblocking_copying_no_opaque"
   pushNonblockingCopyingNoOpaque ::
        Ptr Handle
     -> ByteArray#
-    -> ByteArray#
-    -> Int
-    -> Int
+    -> ByteArray# -- message
+    -> Int -- message offset
+    -> Int -- message length
+    -> ByteArray# -- key
+    -> Int -- key offset
+    -> Int -- key length
+    -> Ptr Headers
     -> IO ResponseError
 
 foreign import ccall unsafe "rd_kafka_new"
@@ -641,6 +681,27 @@ foreign import ccall safe "rd_kafka_flush"
        Ptr Handle
     -> CInt
     -> IO ResponseError
+
+-- | Calls @rd_kafka_headers_new@.
+foreign import ccall unsafe "rd_kafka_headers_new"
+  headersNew ::
+       CSize
+    -> IO (Ptr Headers)
+
+-- | Calls @rd_kafka_header_add@.
+foreign import ccall unsafe "rd_kafka_header_add"
+  headerAdd ::
+       Ptr CChar -- name
+    -> CSsize -- name size
+    -> Ptr Void -- value
+    -> CSsize -- value size
+    -> IO (Ptr Headers)
+
+-- | Calls @rd_kafka_headers_destroy@.
+foreign import ccall unsafe "rd_kafka_headers_destroy"
+  headersDestroy ::
+       Ptr Headers
+    -> IO ()
 
 -- | Wrap a delivery report message callback. This allocates storage that
 -- is not reclaimed until @freeHaskellFunPtr@ is called.

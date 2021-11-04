@@ -12,71 +12,120 @@ rd_kafka_resp_err_t hsrdk_copy_version_string(char* dst) {
 rd_kafka_resp_err_t hsrdk_push_nonblocking_noncopying_opaque(
   rd_kafka_t* rk,
   char* topic,
-  char* base,
-  HsInt off,
-  HsInt len,
+  char* msgBase,
+  HsInt msgOff,
+  HsInt msgLen,
+  char* keyBase,
+  HsInt keyOff,
+  HsInt keyLen,
+  rd_kafka_headers_t* hdrs,
   void* stable) {
-  void* buf = (void*)(base + off);
+  void* msg = (void*)(msgBase + msgOff);
+  void* key;
+  if(keyLen == 0) {
+    key = NULL;
+  } else {
+    key = (void*)(keyBase + keyOff);
+  }
   // Send the message with no explicit instructions about copying or
   // freeing the payload. We destroy the StablePtr in the
   // delivery callback.
   return rd_kafka_producev(
     rk,
     RD_KAFKA_V_TOPIC(topic),
-    RD_KAFKA_V_VALUE(buf,(size_t)len),
+    RD_KAFKA_V_VALUE(msg,(size_t)msgLen),
     RD_KAFKA_V_OPAQUE(stable),
+    RD_KAFKA_V_KEY(key,(size_t)keyLen),
+    RD_KAFKA_V_HEADERS(hdrs),
     RD_KAFKA_V_END);
 }
 
 rd_kafka_resp_err_t hsrdk_push_blocking_noncopying_opaque(
   rd_kafka_t* rk,
   char* topic,
-  char* base,
-  HsInt off,
-  HsInt len,
+  char* msgBase,
+  HsInt msgOff,
+  HsInt msgLen,
+  char* keyBase,
+  HsInt keyOff,
+  HsInt keyLen,
+  rd_kafka_headers_t* hdrs,
   void* stable) {
-  void* buf = (void*)(base + off);
+  void* msg = (void*)(msgBase + msgOff);
+  void* key;
+  if(keyLen == 0) {
+    key = NULL;
+  } else {
+    key = (void*)(keyBase + keyOff);
+  }
   // The message is in pinned memory, so making a copy would be silly.
   return rd_kafka_producev(
     rk,
     RD_KAFKA_V_TOPIC(topic),
-    RD_KAFKA_V_VALUE(buf,(size_t)len),
+    RD_KAFKA_V_VALUE(msg,(size_t)msgLen),
     RD_KAFKA_V_OPAQUE(stable),
     RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_BLOCK),
+    RD_KAFKA_V_KEY(key,(size_t)keyLen),
+    RD_KAFKA_V_HEADERS(hdrs),
     RD_KAFKA_V_END);
 }
 
 rd_kafka_resp_err_t hsrdk_push_nonblocking_copying_opaque(
   rd_kafka_t* rk,
   char* topic,
-  char* base,
-  HsInt off,
-  HsInt len,
+  char* msgBase,
+  HsInt msgOff,
+  HsInt msgLen,
+  char* keyBase,
+  HsInt keyOff,
+  HsInt keyLen,
+  rd_kafka_headers_t* hdrs,
   void* stable) {
-  void* buf = (void*)(base + off);
+  void* msg = (void*)(msgBase + msgOff);
+  void* key;
+  if(keyLen == 0) {
+    key = NULL;
+  } else {
+    key = (void*)(keyBase + keyOff);
+  }
   // The message is in unpinned memory, so we must make a copy of it.
   return rd_kafka_producev(
     rk,
     RD_KAFKA_V_TOPIC(topic),
-    RD_KAFKA_V_VALUE(buf,(size_t)len),
+    RD_KAFKA_V_VALUE(msg,(size_t)msgLen),
     RD_KAFKA_V_OPAQUE(stable),
     RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
+    RD_KAFKA_V_KEY(key,(size_t)keyLen),
+    RD_KAFKA_V_HEADERS(hdrs),
     RD_KAFKA_V_END);
 }
 
 rd_kafka_resp_err_t hsrdk_push_nonblocking_copying_no_opaque(
   rd_kafka_t* rk,
   char* topic,
-  char* base,
-  HsInt off,
-  HsInt len) {
-  void* buf = (void*)(base + off);
+  char* msgBase,
+  HsInt msgOff,
+  HsInt msgLen,
+  char* keyBase,
+  HsInt keyOff,
+  HsInt keyLen,
+  rd_kafka_headers_t* hdrs
+  ) {
+  void* msg = (void*)(msgBase + msgOff);
+  void* key;
+  if(keyLen == 0) {
+    key = NULL;
+  } else {
+    key = (void*)(keyBase + keyOff);
+  }
   // The message is in unpinned memory, so we must make a copy of it.
   return rd_kafka_producev(
     rk,
     RD_KAFKA_V_TOPIC(topic),
-    RD_KAFKA_V_VALUE(buf,(size_t)len),
+    RD_KAFKA_V_VALUE(msg,(size_t)msgLen),
     RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
+    RD_KAFKA_V_KEY(key,(size_t)keyLen),
+    RD_KAFKA_V_HEADERS(hdrs),
     RD_KAFKA_V_END);
 }
 

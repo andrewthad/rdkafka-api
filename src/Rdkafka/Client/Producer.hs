@@ -12,9 +12,9 @@ module Rdkafka.Client.Producer
 import Data.Bytes (Bytes)
 import Foreign.C.String.Managed (ManagedCString)
 import Rdkafka.Client.Types (Producer(Producer))
-import Rdkafka.Types (ResponseError)
+import Rdkafka.Types (ResponseError,Headers)
 import GHC.IO (IO(IO))
-import GHC.Exts (raiseIO#)
+import GHC.Exts (Ptr,raiseIO#)
 import Control.Exception (toException)
 
 import qualified Rdkafka as X
@@ -23,18 +23,31 @@ import qualified Rdkafka.Constant.ResponseError as ResponseError
 -- | Produce a single message. If the rdkafka's local message queue
 -- is full, blocks until the message can be enqueued. This never
 -- returns 'ResponseError.QueueFull' (@RD_KAFKA_RESP_ERR__QUEUE_FULL@).
+-- This always frees the headers regardless of whether production is
+-- successful or unsuccessful.
+--
+-- It is common to set @key@ to the empty byte sequences (treated by
+-- this library as no key) and @headers@ to @nullPtr@.
 bytes ::
      Producer
   -> ManagedCString -- ^ Topic name
+  -> Bytes -- ^ Key, use empty bytes for no key
+  -> Ptr Headers -- ^ Headers, use 'nullPtr' for no headers
   -> Bytes -- ^ Message
   -> IO (Either ResponseError ())
-bytes (Producer h) !topic !b = X.produceBytes h topic b >>= \case
-  ResponseError.QueueFull -> X.produceBytesBlocking h topic b >>= \case
+bytes (Producer h) !topic !key !hdrs !b = X.produceBytes h topic b key hdrs >>= \case
+  ResponseError.QueueFull -> X.produceBytesBlocking h topic b key hdrs >>= \case
     ResponseError.NoError -> pure (Right ())
     ResponseError.QueueFull -> IO (raiseIO# (toException (userError "Rdkafka.Client.Producer.bytes: unexpected QueueFull error")))
-    e -> pure (Left e)
+    e -> finishWithError e
   ResponseError.NoError -> pure (Right ())
-  e -> pure (Left e)
+  e -> finishWithError e
+  where
+  finishWithError :: ResponseError -> IO (Either ResponseError ())
+  finishWithError !e = do
+    X.headersDestroy hdrs
+    pure (Left e)
+  
 
 -- | Block until all pending messages have been delivered.
 --
