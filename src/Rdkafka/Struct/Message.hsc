@@ -23,12 +23,12 @@ module Rdkafka.Struct.Message
   , peekPrivate
   ) where
 
-import Data.Int (Int32,Int64)
+import Data.Int (Int64)
 import Data.Void (Void)
 import Foreign.C.Types (CSize)
 import Foreign.Ptr (Ptr)
 import Foreign.Storable (peekByteOff)
-import Rdkafka.Types (Topic,Message,ResponseError,MessageOpaque(..))
+import Rdkafka.Types (Topic,Message,ResponseError,Partition,MessageOpaque(..))
 
 -- | Get field @rkt@
 peekTopic :: Ptr Message -> IO (Ptr Topic)
@@ -39,7 +39,7 @@ peekError :: Ptr Message -> IO ResponseError
 peekError = #{peek rd_kafka_message_t, err}
 
 -- | Get field @partition@
-peekPartition :: Ptr Message -> IO Int32
+peekPartition :: Ptr Message -> IO Partition
 peekPartition = #{peek rd_kafka_message_t, partition}
 
 -- | Get field @payload@

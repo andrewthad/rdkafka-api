@@ -40,6 +40,7 @@ import Foreign.Storable (Storable)
 import Rdkafka.Constant.ResponseError (ResponseError(..))
 
 newtype Partition = Partition Int32
+  deriving newtype (Eq, Ord, Storable)
 
 -- | Corresponds to @rd_kafka_conf_res_t@.
 newtype ConfigurationResult = ConfigurationResult CInt
