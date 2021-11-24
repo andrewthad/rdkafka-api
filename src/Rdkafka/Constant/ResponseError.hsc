@@ -4,10 +4,12 @@
 {-# language DeriveAnyClass #-}
 {-# language DerivingStrategies #-}
 {-# language GeneralizedNewtypeDeriving #-}
+{-# language MagicHash #-}
 {-# language PatternSynonyms #-}
 
 module Rdkafka.Constant.ResponseError
   ( ResponseError(..)
+  , encodeAddr##
   , pattern Begin
   , pattern BadMsg
   , pattern BadCompression
@@ -156,11 +158,160 @@ module Rdkafka.Constant.ResponseError
 import Control.Exception (Exception)
 import Foreign.C.Types (CInt)
 import Foreign.Storable (Storable)
+import GHC.Exts (Addr##)
 
 -- | Corresponds to @rd_kafka_resp_err_t@.
 newtype ResponseError = ResponseError CInt
   deriving newtype (Eq,Storable)
   deriving anyclass (Exception)
+
+-- | Encode response error as primitive string literal.
+encodeAddr## :: ResponseError -> Addr##
+encodeAddr## e = case e of
+  Begin -> "Begin"##
+  BadMsg -> "BadMsg"##
+  BadCompression -> "BadCompression"##
+  Destroy -> "Destroy"##
+  Fail -> "Fail"##
+  Transport -> "Transport"##
+  CritSysResource -> "CritSysResource"##
+  Resolve -> "Resolve"##
+  MsgTimedOut -> "MsgTimedOut"##
+  PartitionEof -> "PartitionEof"##
+  UnknownPartition -> "UnknownPartition"##
+  Fs -> "Fs"##
+  UnknownTopic -> "UnknownTopic"##
+  AllBrokersDown -> "AllBrokersDown"##
+  InvalidArg -> "InvalidArg"##
+  TimedOut -> "TimedOut"##
+  QueueFull -> "QueueFull"##
+  IsrInsuff -> "IsrInsuff"##
+  NodeUpdate -> "NodeUpdate"##
+  Ssl -> "Ssl"##
+  WaitCoord -> "WaitCoord"##
+  UnknownGroup -> "UnknownGroup"##
+  InProgress -> "InProgress"##
+  PrevInProgress -> "PrevInProgress"##
+  ExistingSubscription -> "ExistingSubscription"##
+  AssignPartitions -> "AssignPartitions"##
+  RevokePartitions -> "RevokePartitions"##
+  Conflict -> "Conflict"##
+  State -> "State"##
+  UnknownProtocol -> "UnknownProtocol"##
+  NotImplemented -> "NotImplemented"##
+  Authentication -> "Authentication"##
+  NoOffset -> "NoOffset"##
+  Outdated -> "Outdated"##
+  TimedOutQueue -> "TimedOutQueue"##
+  UnsupportedFeature -> "UnsupportedFeature"##
+  WaitCache -> "WaitCache"##
+  Intr -> "Intr"##
+  KeySerialization -> "KeySerialization"##
+  ValueSerialization -> "ValueSerialization"##
+  KeyDeserialization -> "KeyDeserialization"##
+  ValueDeserialization -> "ValueDeserialization"##
+  Partial -> "Partial"##
+  ReadOnly -> "ReadOnly"##
+  Noent -> "Noent"##
+  Underflow -> "Underflow"##
+  InvalidType -> "InvalidType"##
+  Retry -> "Retry"##
+  PurgeQueue -> "PurgeQueue"##
+  PurgeInflight -> "PurgeInflight"##
+  Fatal -> "Fatal"##
+  Inconsistent -> "Inconsistent"##
+  GaplessGuarantee -> "GaplessGuarantee"##
+  MaxPollExceeded -> "MaxPollExceeded"##
+  UnknownBroker -> "UnknownBroker"##
+  NotConfigured -> "NotConfigured"##
+  Fenced -> "Fenced"##
+  Application -> "Application"##
+  End -> "End"##
+  Unknown -> "Unknown"##
+  NoError -> "NoError"##
+  OffsetOutOfRange -> "OffsetOutOfRange"##
+  InvalidMsg -> "InvalidMsg"##
+  UnknownTopicOrPart -> "UnknownTopicOrPart"##
+  InvalidMsgSize -> "InvalidMsgSize"##
+  LeaderNotAvailable -> "LeaderNotAvailable"##
+  NotLeaderForPartition -> "NotLeaderForPartition"##
+  RequestTimedOut -> "RequestTimedOut"##
+  BrokerNotAvailable -> "BrokerNotAvailable"##
+  ReplicaNotAvailable -> "ReplicaNotAvailable"##
+  MsgSizeTooLarge -> "MsgSizeTooLarge"##
+  StaleCtrlEpoch -> "StaleCtrlEpoch"##
+  OffsetMetadataTooLarge -> "OffsetMetadataTooLarge"##
+  NetworkException -> "NetworkException"##
+  CoordinatorLoadInProgress -> "CoordinatorLoadInProgress"##
+  CoordinatorNotAvailable -> "CoordinatorNotAvailable"##
+  NotCoordinator -> "NotCoordinator"##
+  TopicException -> "TopicException"##
+  RecordListTooLarge -> "RecordListTooLarge"##
+  NotEnoughReplicas -> "NotEnoughReplicas"##
+  NotEnoughReplicasAfterAppend -> "NotEnoughReplicasAfterAppend"##
+  InvalidRequiredAcks -> "InvalidRequiredAcks"##
+  IllegalGeneration -> "IllegalGeneration"##
+  InconsistentGroupProtocol -> "InconsistentGroupProtocol"##
+  InvalidGroupId -> "InvalidGroupId"##
+  UnknownMemberId -> "UnknownMemberId"##
+  InvalidSessionTimeout -> "InvalidSessionTimeout"##
+  RebalanceInProgress -> "RebalanceInProgress"##
+  InvalidCommitOffsetSize -> "InvalidCommitOffsetSize"##
+  TopicAuthorizationFailed -> "TopicAuthorizationFailed"##
+  GroupAuthorizationFailed -> "GroupAuthorizationFailed"##
+  ClusterAuthorizationFailed -> "ClusterAuthorizationFailed"##
+  InvalidTimestamp -> "InvalidTimestamp"##
+  UnsupportedSaslMechanism -> "UnsupportedSaslMechanism"##
+  IllegalSaslState -> "IllegalSaslState"##
+  UnsupportedVersion -> "UnsupportedVersion"##
+  TopicAlreadyExists -> "TopicAlreadyExists"##
+  InvalidPartitions -> "InvalidPartitions"##
+  InvalidReplicationFactor -> "InvalidReplicationFactor"##
+  InvalidReplicaAssignment -> "InvalidReplicaAssignment"##
+  InvalidConfig -> "InvalidConfig"##
+  NotController -> "NotController"##
+  InvalidRequest -> "InvalidRequest"##
+  UnsupportedForMessageFormat -> "UnsupportedForMessageFormat"##
+  PolicyViolation -> "PolicyViolation"##
+  OutOfOrderSequenceNumber -> "OutOfOrderSequenceNumber"##
+  DuplicateSequenceNumber -> "DuplicateSequenceNumber"##
+  InvalidProducerEpoch -> "InvalidProducerEpoch"##
+  InvalidTxnState -> "InvalidTxnState"##
+  InvalidProducerIdMapping -> "InvalidProducerIdMapping"##
+  InvalidTransactionTimeout -> "InvalidTransactionTimeout"##
+  ConcurrentTransactions -> "ConcurrentTransactions"##
+  TransactionCoordinatorFenced -> "TransactionCoordinatorFenced"##
+  TransactionalIdAuthorizationFailed -> "TransactionalIdAuthorizationFailed"##
+  SecurityDisabled -> "SecurityDisabled"##
+  OperationNotAttempted -> "OperationNotAttempted"##
+  KafkaStorageError -> "KafkaStorageError"##
+  LogDirNotFound -> "LogDirNotFound"##
+  SaslAuthenticationFailed -> "SaslAuthenticationFailed"##
+  UnknownProducerId -> "UnknownProducerId"##
+  ReassignmentInProgress -> "ReassignmentInProgress"##
+  DelegationTokenAuthDisabled -> "DelegationTokenAuthDisabled"##
+  DelegationTokenNotFound -> "DelegationTokenNotFound"##
+  DelegationTokenOwnerMismatch -> "DelegationTokenOwnerMismatch"##
+  DelegationTokenRequestNotAllowed -> "DelegationTokenRequestNotAllowed"##
+  DelegationTokenAuthorizationFailed -> "DelegationTokenAuthorizationFailed"##
+  DelegationTokenExpired -> "DelegationTokenExpired"##
+  InvalidPrincipalType -> "InvalidPrincipalType"##
+  NonEmptyGroup -> "NonEmptyGroup"##
+  GroupIdNotFound -> "GroupIdNotFound"##
+  FetchSessionIdNotFound -> "FetchSessionIdNotFound"##
+  InvalidFetchSessionEpoch -> "InvalidFetchSessionEpoch"##
+  ListenerNotFound -> "ListenerNotFound"##
+  TopicDeletionDisabled -> "TopicDeletionDisabled"##
+  FencedLeaderEpoch -> "FencedLeaderEpoch"##
+  UnknownLeaderEpoch -> "UnknownLeaderEpoch"##
+  UnsupportedCompressionType -> "UnsupportedCompressionType"##
+  StaleBrokerEpoch -> "StaleBrokerEpoch"##
+  OffsetNotAvailable -> "OffsetNotAvailable"##
+  MemberIdRequired -> "MemberIdRequired"##
+  PreferredLeaderNotAvailable -> "PreferredLeaderNotAvailable"##
+  GroupMaxSizeReached -> "GroupMaxSizeReached"##
+  FencedInstanceId -> "FencedInstanceId"##
+  _ -> "Unknown"##
 
 instance Show ResponseError where
   showsPrec !d !e s = case e of

@@ -8,6 +8,7 @@ module Rdkafka.Client.Consumer
   , poll
   , pollMany
   , close
+  , commit
   ) where
 
 import Control.Exception (toException)
@@ -23,12 +24,13 @@ import GHC.Clock (getMonotonicTimeNSec)
 import GHC.Exts (raiseIO#)
 import GHC.IO (IO(IO))
 import Rdkafka.Client.Types (Consumer(Consumer))
-import Rdkafka.Types (ResponseError,Message)
+import Rdkafka.Types (ResponseError,Message,Partition)
 
 import qualified Rdkafka as X
 import qualified Rdkafka.Constant.ResponseError as ResponseError
 import qualified Rdkafka.Constant.Partition as Partition
 import qualified Rdkafka.Struct.Message as Message
+import qualified Rdkafka.Struct.TopicPartition as TopicPartition
 import qualified Data.Primitive as PM
 
 -- | Subscribe to a single topic on partition @RD_KAFKA_PARTITION_UA@.
@@ -44,6 +46,30 @@ subscribe (Consumer h) !topic = do
   case e of
     ResponseError.NoError -> pure (Right ())
     _ -> pure (Left e)
+
+-- | Commit offset on broker for a single partition. The documentation for
+-- librdkafka describes the offset: \"The offset should be the offset where
+-- consumption will resume, i.e., the last processed offset + 1\".
+--
+-- This is synchronous, blocking until the commit succeeds or fails. Failures
+-- should be treated as fatal.
+--
+-- Implementation calls @rd_kafka_commit@.
+commit ::
+     Consumer
+  -> ManagedCString -- ^ Topic name
+  -> Partition -- ^ Partition
+  -> Int64 -- ^ Offset at which processing should resume
+  -> IO (Either ResponseError ())
+commit (Consumer h) !topic !partition !offset = do
+  ts <- X.topicPartitionListNew 1
+  t <- X.topicPartitionListAdd ts topic partition
+  TopicPartition.pokeOffset t offset
+  r <- X.commit h ts
+  X.topicPartitionListDestroy ts
+  case r of
+    ResponseError.NoError -> pure (Right ())
+    e -> pure (Right ())
 
 -- | Calls @rd_kafka_consumer_poll@. Blocks until a message is available.
 -- Checks the @err@ field in the message. Returns @Right@ with the message

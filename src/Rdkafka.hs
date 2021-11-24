@@ -19,6 +19,7 @@ module Rdkafka
   , topicPartitionListNew
   , topicPartitionListAdd
   , topicPartitionListDestroy
+  , topicPartitionListSetOffset
   , topicName
   , pollSetConsumer
   , new
@@ -41,6 +42,8 @@ module Rdkafka
   , consumerPollNonblocking
   , poll
   , queuePoll
+    -- * Commit Offset
+  , commit
     -- * Produce
   , produceBytes
   , produceBytesBlocking
@@ -63,6 +66,7 @@ module Rdkafka
 import Control.Exception (Exception,toException)
 import Data.ByteString (ByteString)
 import Data.Bytes.Types (Bytes(Bytes))
+import Data.Int (Int64)
 import Data.Kind (Type)
 import Data.Primitive (ByteArray(ByteArray),MutableByteArray(MutableByteArray))
 import Data.Void (Void)
@@ -199,8 +203,16 @@ consumerPoll ::
      Ptr Handle -- ^ Kafka handle
   -> Int -- ^ Milliseconds to wait for message, @-1@ means wait indefinitely
   -> IO (Ptr Message)
-consumerPoll !tpl !ms =
-  safeRdKafkaConsumerPoll tpl (fromIntegral @Int @CInt ms)
+consumerPoll !h !ms =
+  safeRdKafkaConsumerPoll h (fromIntegral @Int @CInt ms)
+
+-- | Calls @rd_kafka_commit@ with @async@ to false.
+commit ::
+     Ptr Handle
+  -> Ptr TopicPartitionList
+  -> IO ResponseError
+commit !h !tpl =
+  safeRdKafkaCommit h tpl (0 :: CInt)
 
 -- | Calls @rd_kafka_consumer_poll@, returning immidiately if no messages
 -- are on the queue. This is more efficient that calling 'consumerPoll' with
@@ -578,6 +590,15 @@ foreign import ccall unsafe "rd_kafka_topic_partition_list_destroy"
        Ptr TopicPartitionList -- ^ Topics
     -> IO ()
 
+-- | Calls @rd_kafka_topic_partition_list_destroy@.
+foreign import ccall unsafe "rd_kafka_topic_partition_list_set_offset"
+  topicPartitionListSetOffset ::
+       Ptr TopicPartitionList -- ^ Topics
+    -> ByteArray# -- ^ Topic name, must have NUL terminator
+    -> Partition -- ^ Partition
+    -> Int64 -- ^ Offset
+    -> IO ResponseError
+
 -- | Calls @rd_kafka_consumer_close@ using the safe FFI.
 foreign import ccall safe "rd_kafka_consumer_close"
   consumerClose ::
@@ -657,6 +678,13 @@ foreign import ccall safe "rd_kafka_consumer_poll"
        Ptr Handle
     -> CInt
     -> IO (Ptr Message)
+
+foreign import ccall safe "rd_kafka_commit"
+  safeRdKafkaCommit ::
+       Ptr Handle
+    -> Ptr TopicPartitionList
+    -> CInt
+    -> IO ResponseError
 
 foreign import ccall unsafe "rd_kafka_consumer_poll"
   unsafeRdKafkaConsumerPoll ::
