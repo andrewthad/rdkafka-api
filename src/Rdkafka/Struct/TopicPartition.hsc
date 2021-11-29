@@ -29,20 +29,20 @@ import Rdkafka.Types (Topic,TopicPartition,ResponseError,Partition)
 
 -- | Get field @rkt@
 peekTopic :: Ptr TopicPartition -> IO (Ptr Topic)
-peekTopic = #{peek rd_kafka_message_t, rkt}
+peekTopic = #{peek rd_kafka_topic_partition_t, topic}
 
 -- | Get field @err@
 peekError :: Ptr TopicPartition -> IO ResponseError
-peekError = #{peek rd_kafka_message_t, err}
+peekError = #{peek rd_kafka_topic_partition_t, err}
 
 -- | Get field @partition@
 peekPartition :: Ptr TopicPartition -> IO Partition
-peekPartition = #{peek rd_kafka_message_t, partition}
+peekPartition = #{peek rd_kafka_topic_partition_t, partition}
 
 -- | Get field @offset@
 peekOffset :: Ptr TopicPartition -> IO Int64
-peekOffset = #{peek rd_kafka_message_t, offset}
+peekOffset = #{peek rd_kafka_topic_partition_t, offset}
 
 -- | Set field @offset@
 pokeOffset :: Ptr TopicPartition -> Int64 -> IO ()
-pokeOffset = #{poke rd_kafka_message_t, offset}
+pokeOffset = #{poke rd_kafka_topic_partition_t, offset}

@@ -27,6 +27,7 @@ module Rdkafka.Types
     -- * Callbacks
   , LogCallback
   , DeliveryReportMessageCallback
+  , OffsetCommitCallback
   ) where
 
 import Data.Int (Int32)
@@ -125,3 +126,8 @@ type LogCallback = Ptr Handle -> CInt -> CString -> CString -> IO ()
 -- * The per-handle opaque value (@unanchorPayload@ must be called on this)
 type DeliveryReportMessageCallback =
   Ptr Handle -> Ptr Message -> Ptr Void -> IO ()
+
+-- | A callback for offset commits. This is passed to @rd_kafka_conf_set_offset_commit_cb@
+-- and to @rd_kafka_commit_queue@.
+type OffsetCommitCallback =
+  Ptr Handle -> ResponseError -> Ptr TopicPartitionList -> Ptr Void -> IO ()

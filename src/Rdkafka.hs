@@ -44,6 +44,7 @@ module Rdkafka
   , queuePoll
     -- * Commit Offset
   , commit
+  , commitQueue_
     -- * Produce
   , produceBytes
   , produceBytesBlocking
@@ -55,6 +56,7 @@ module Rdkafka
     -- * Wrapper
   , wrapDeliveryReportMessageCallback
   , wrapLogCallback
+  , wrapOffsetCommitCallback
     -- * Auxiliary Functions
     -- | These functions are not part of @librdkafka@, but they are
     -- useful when using this library.
@@ -80,7 +82,7 @@ import GHC.Stable (StablePtr(StablePtr),freeStablePtr,castStablePtrToPtr,newStab
 import GHC.Stable (castPtrToStablePtr,deRefStablePtr)
 import Rdkafka.Types (Configuration,LogCallback,MessageOpaque(..))
 import Rdkafka.Types (DeliveryReportMessageCallback,Partition(..))
-import Rdkafka.Types (EventType,Headers)
+import Rdkafka.Types (EventType,Headers,OffsetCommitCallback)
 import Rdkafka.Types (Message,NewTopic,AdminOptions,Queue,Event)
 import Rdkafka.Types (ResponseError,Handle,ConfigurationResult)
 import Rdkafka.Types (TopicPartitionList,TopicPartition,Topic)
@@ -114,6 +116,9 @@ topicPartitionListNew n =
   rdKafkaTopicPartitionListNew (fromIntegral @Int @CInt n)
 
 -- | Calls @rd_kafka_topic_partition_list_add@.
+--
+-- Note: librdkafka copies the topic name, so it does not need to be pinned
+-- or stay live.
 topicPartitionListAdd ::
      Ptr TopicPartitionList
   -> ManagedCString -- ^ Topic name
@@ -213,6 +218,16 @@ commit ::
   -> IO ResponseError
 commit !h !tpl =
   safeRdKafkaCommit h tpl (0 :: CInt)
+
+-- | Calls @rd_kafka_commit_queue@ with @commit_opaque@ set to @NULL@.
+commitQueue_ ::
+     Ptr Handle
+  -> Ptr TopicPartitionList
+  -> Ptr Queue
+  -> FunPtr OffsetCommitCallback
+  -> IO ResponseError
+commitQueue_ !h !tpl !q !cb =
+  safeRdKafkaCommitQueue h tpl q cb nullPtr
 
 -- | Calls @rd_kafka_consumer_poll@, returning immidiately if no messages
 -- are on the queue. This is more efficient that calling 'consumerPoll' with
@@ -686,6 +701,15 @@ foreign import ccall safe "rd_kafka_commit"
     -> CInt
     -> IO ResponseError
 
+foreign import ccall safe "rd_kafka_commit_queue"
+  safeRdKafkaCommitQueue ::
+       Ptr Handle
+    -> Ptr TopicPartitionList
+    -> Ptr Queue
+    -> FunPtr OffsetCommitCallback
+    -> Ptr Void
+    -> IO ResponseError
+
 foreign import ccall unsafe "rd_kafka_consumer_poll"
   unsafeRdKafkaConsumerPoll ::
        Ptr Handle
@@ -744,3 +768,11 @@ foreign import ccall "wrapper"
   wrapLogCallback ::
        LogCallback
     -> IO (FunPtr LogCallback)
+
+
+-- | Wrap a delivery report message callback. This allocates storage that
+-- is not reclaimed until @freeHaskellFunPtr@ is called.
+foreign import ccall "wrapper"
+  wrapOffsetCommitCallback ::
+       OffsetCommitCallback
+    -> IO (FunPtr OffsetCommitCallback)

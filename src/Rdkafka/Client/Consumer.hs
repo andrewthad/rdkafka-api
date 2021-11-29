@@ -19,12 +19,12 @@ import Data.Int (Int64)
 import Data.Primitive (PrimArray)
 import Data.Word (Word64)
 import Foreign.C.String.Managed (ManagedCString)
-import Foreign.Ptr (Ptr,nullPtr)
+import Foreign.Ptr (Ptr,FunPtr,nullPtr)
 import GHC.Clock (getMonotonicTimeNSec)
 import GHC.Exts (raiseIO#)
 import GHC.IO (IO(IO))
 import Rdkafka.Client.Types (Consumer(Consumer))
-import Rdkafka.Types (ResponseError,Message,Partition)
+import Rdkafka.Types (ResponseError,Message,Partition,OffsetCommitCallback)
 
 import qualified Rdkafka as X
 import qualified Rdkafka.Constant.ResponseError as ResponseError
@@ -54,18 +54,20 @@ subscribe (Consumer h) !topic = do
 -- This is synchronous, blocking until the commit succeeds or fails. Failures
 -- should be treated as fatal.
 --
--- Implementation calls @rd_kafka_commit@.
+-- Implementation calls @rd_kafka_commit_queue@. For this reason, a callback
+-- is required. The callback is called before this function returns.
 commit ::
      Consumer
   -> ManagedCString -- ^ Topic name
   -> Partition -- ^ Partition
   -> Int64 -- ^ Offset at which processing should resume
+  -> FunPtr OffsetCommitCallback
   -> IO (Either ResponseError ())
-commit (Consumer h) !topic !partition !offset = do
+commit (Consumer h) !topic !partition !offset !cb = do
   ts <- X.topicPartitionListNew 1
   t <- X.topicPartitionListAdd ts topic partition
   TopicPartition.pokeOffset t offset
-  r <- X.commit h ts
+  r <- X.commitQueue_ h ts nullPtr cb
   X.topicPartitionListDestroy ts
   case r of
     ResponseError.NoError -> pure (Right ())
