@@ -69,7 +69,7 @@ commit (Consumer h) !topic !partition !offset = do
   X.topicPartitionListDestroy ts
   case r of
     ResponseError.NoError -> pure (Right ())
-    e -> pure (Right ())
+    e -> pure (Left e)
 
 -- | Calls @rd_kafka_consumer_poll@. Blocks until a message is available.
 -- Checks the @err@ field in the message. Returns @Right@ with the message

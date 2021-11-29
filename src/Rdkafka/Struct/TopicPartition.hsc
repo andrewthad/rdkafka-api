@@ -43,6 +43,6 @@ peekPartition = #{peek rd_kafka_message_t, partition}
 peekOffset :: Ptr TopicPartition -> IO Int64
 peekOffset = #{peek rd_kafka_message_t, offset}
 
--- | Get field @offset@
+-- | Set field @offset@
 pokeOffset :: Ptr TopicPartition -> Int64 -> IO ()
 pokeOffset = #{poke rd_kafka_message_t, offset}
