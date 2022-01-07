@@ -42,6 +42,5 @@ library
   hs-source-dirs: src
   c-sources: cbits/HaskellRdkafka.c
   extra-libraries: rdkafka
-  extra-lib-dirs: /usr/local/lib
   build-tool-depends: hsc2hs:hsc2hs >= 0.68.5
   default-language: Haskell2010
