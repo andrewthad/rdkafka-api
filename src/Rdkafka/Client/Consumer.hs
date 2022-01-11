@@ -5,6 +5,7 @@
 
 module Rdkafka.Client.Consumer
   ( subscribe
+  , subscribePartition
   , poll
   , pollMany
   , close
@@ -38,9 +39,17 @@ subscribe ::
      Consumer
   -> ManagedCString -- ^ Topic name
   -> IO (Either ResponseError ())
-subscribe (Consumer h) !topic = do
+subscribe !c !t = subscribePartition c t Partition.Unassigned
+
+-- | Subscribe to a single topic a specific partition.
+subscribePartition ::
+     Consumer
+  -> ManagedCString -- ^ Topic name
+  -> Partition -- ^ Partition
+  -> IO (Either ResponseError ())
+subscribePartition (Consumer h) !topic !p = do
   ts <- X.topicPartitionListNew 1
-  _ <- X.topicPartitionListAdd ts topic Partition.Unassigned
+  _ <- X.topicPartitionListAdd ts topic p
   e <- X.subscribe h ts
   X.topicPartitionListDestroy ts
   case e of
