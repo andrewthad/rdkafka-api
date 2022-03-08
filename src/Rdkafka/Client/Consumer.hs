@@ -1,6 +1,7 @@
 {-# language BangPatterns #-}
 {-# language LambdaCase #-}
 {-# language MagicHash #-}
+{-# language NumericUnderscores #-}
 {-# language TypeApplications #-}
 
 module Rdkafka.Client.Consumer
@@ -10,6 +11,8 @@ module Rdkafka.Client.Consumer
   , pollMany
   , close
   , commit
+    -- * Watermarks
+  , queryPartitionWatermarks
   ) where
 
 import Control.Exception (toException)
@@ -25,7 +28,7 @@ import GHC.Clock (getMonotonicTimeNSec)
 import GHC.Exts (raiseIO#)
 import GHC.IO (IO(IO))
 import Rdkafka.Client.Types (Consumer(Consumer))
-import Rdkafka.Types (ResponseError,Message,Partition,OffsetCommitCallback)
+import Rdkafka.Types (ResponseError,Message,Partition,OffsetCommitCallback,Watermarks(..))
 
 import qualified Rdkafka as X
 import qualified Rdkafka.Constant.ResponseError as ResponseError
@@ -33,6 +36,7 @@ import qualified Rdkafka.Constant.Partition as Partition
 import qualified Rdkafka.Struct.Message as Message
 import qualified Rdkafka.Struct.TopicPartition as TopicPartition
 import qualified Data.Primitive as PM
+import qualified Data.Primitive.Ptr as PM
 
 -- | Subscribe to a single topic on partition @RD_KAFKA_PARTITION_UA@.
 subscribe ::
@@ -167,3 +171,25 @@ inlineSingletonPrimArray !msg = runPrimArrayST $ do
   dst <- PM.newPrimArray 1
   PM.writePrimArray dst 0 msg
   PM.unsafeFreezePrimArray dst
+
+-- | Wait forever for watermark offsets. Technically, this could be run on
+-- a producer or a consumer, but consumption seems like the only context
+-- in which it makes sense to do this.
+queryPartitionWatermarks ::
+     Consumer
+  -> ManagedCString -- ^ Topic name
+  -> Partition -- ^ Partition, do not provide the unknown partition
+  -> IO (Either ResponseError Watermarks)
+queryPartitionWatermarks (Consumer h) !name !p = do
+  buf <- PM.newPinnedPrimArray 2
+  -- Should not need to initialize these since they will be
+  -- overwritten, but just in case, we do anyway.
+  PM.writePrimArray buf 0 (0 :: Int64)
+  PM.writePrimArray buf 1 (0 :: Int64)
+  let addr = PM.mutablePrimArrayContents buf
+  e <- X.queryWatermarkOffsets h name p addr (PM.advancePtr addr 1) 30_000
+  low <- PM.readPrimArray buf 0
+  high <- PM.readPrimArray buf 1
+  case e of
+    ResponseError.NoError -> pure (Right Watermarks{low=low, high=high})
+    _ -> pure (Left e)
