@@ -38,7 +38,7 @@ peekElements = #{peek rd_kafka_topic_partition_list_t, elems}
 traverse_ :: (Ptr TopicPartition -> IO a) -> Ptr TopicPartitionList -> IO ()
 traverse_ f tpl = do
   total0 <- peekCount tpl
-  let !total = fromIntegral total :: Int
+  let !total = fromIntegral total0 :: Int
   tps <- peekElements tpl
   go 0 total tps
   where
