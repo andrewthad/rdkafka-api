@@ -14,6 +14,8 @@ module Rdkafka.Client.Consumer
   , commit
     -- * Watermarks
   , queryPartitionWatermarks
+    -- * Assign Offsets
+  , offsetsStore
   ) where
 
 import Control.Exception (toException)
@@ -208,4 +210,16 @@ queryPartitionWatermarks (Consumer h) !name !p = do
   high <- PM.readPrimArray buf 1
   case e of
     ResponseError.NoError -> pure (Right Watermarks{low=low, high=high})
+    _ -> pure (Left e)
+
+-- | Calls @rd_kafka_offsets_store@. Per the librdkafka docs, this may only
+-- be used when @enable.auto.offset.store@ is false.
+offsetsStore ::
+     Consumer
+  -> Ptr TopicPartitionList
+  -> IO (Either ResponseError ())
+offsetsStore (Consumer h) !tpl = do
+  e <- X.offsetsStore h tpl
+  case e of
+    ResponseError.NoError -> pure (Right ())
     _ -> pure (Left e)

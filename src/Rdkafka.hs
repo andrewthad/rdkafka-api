@@ -34,6 +34,7 @@ module Rdkafka
   , eventDestroy
   , createTopic
   , eventType
+  , offsetsStore
   , queryWatermarkOffsets
   , version
   , versionString
@@ -777,6 +778,13 @@ foreign import ccall unsafe "rd_kafka_headers_destroy"
   headersDestroy ::
        Ptr Headers
     -> IO ()
+
+-- | Calls @rd_kafka_offsets_store@.
+foreign import ccall unsafe "rd_kafka_offsets_store"
+  offsetsStore ::
+       Ptr Handle
+    -> Ptr TopicPartitionList
+    -> IO ResponseError
 
 foreign import ccall safe "rd_kafka_query_watermark_offsets"
   safeQueryWatermarkOffsets ::
