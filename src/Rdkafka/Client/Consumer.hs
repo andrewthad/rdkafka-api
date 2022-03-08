@@ -8,6 +8,7 @@ module Rdkafka.Client.Consumer
   ( subscribe
   , subscribePartition
   , subscription
+  , assignment
   , poll
   , pollMany
   , close
@@ -51,6 +52,8 @@ subscribe !c !t = subscribePartition c t Partition.Unassigned
 
 -- | Get the list of subscriptions. The caller must delete the topic
 -- partition list with 'topicPartitionListDestroy' after using it.
+--
+-- Consider using 'assignment' instead of this.
 subscription ::
      Consumer -- ^ Kafka handle
   -> IO (Either ResponseError (Ptr TopicPartitionList))
@@ -58,6 +61,20 @@ subscription (Consumer h) = do
   buf <- PM.newPinnedPrimArray 1
   PM.writePrimArray buf 0 (nullPtr :: Ptr TopicPartitionList)
   e <- X.subscription h (PM.mutablePrimArrayContents buf)
+  r <- PM.readPrimArray buf 0
+  case e of
+    ResponseError.NoError -> pure (Right r)
+    _ -> pure (Left e)
+
+-- | Get the list of assignments. The caller must delete the topic
+-- partition list with 'topicPartitionListDestroy' after using it.
+assignment ::
+     Consumer -- ^ Kafka handle
+  -> IO (Either ResponseError (Ptr TopicPartitionList))
+assignment (Consumer h) = do
+  buf <- PM.newPinnedPrimArray 1
+  PM.writePrimArray buf 0 (nullPtr :: Ptr TopicPartitionList)
+  e <- X.assignment h (PM.mutablePrimArrayContents buf)
   r <- PM.readPrimArray buf 0
   case e of
     ResponseError.NoError -> pure (Right r)
