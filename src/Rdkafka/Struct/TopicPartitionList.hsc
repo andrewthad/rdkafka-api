@@ -24,11 +24,11 @@ import Foreign.Storable (peekByteOff,peekElemOff)
 import Rdkafka.Types (Topic,Message,ResponseError,TopicPartitionList,TopicPartition)
 
 -- | Get field @cnt@
-peekCount :: Ptr TopicPartitionList -> IO (Ptr CInt)
+peekCount :: Ptr TopicPartitionList -> IO CInt
 peekCount = #{peek rd_kafka_topic_partition_list_t, cnt}
 
 -- | Get field @size@
-peekSize :: Ptr TopicPartitionList -> IO (Ptr CInt)
+peekSize :: Ptr TopicPartitionList -> IO CInt
 peekSize = #{peek rd_kafka_topic_partition_list_t, size}
 
 -- | Get field @elems@
