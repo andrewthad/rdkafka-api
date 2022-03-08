@@ -27,6 +27,7 @@ module Rdkafka
   , destroy
   , consumerClose
   , subscribe
+  , subscription
   , messageDestroy
   , newTopicNew
   , newTopicDestroy
@@ -606,6 +607,13 @@ foreign import ccall unsafe "rd_kafka_subscribe"
   subscribe ::
        Ptr Handle -- ^ Kafka handle
     -> Ptr TopicPartitionList -- ^ Topics
+    -> IO ResponseError
+
+-- | Calls @rd_kafka_subscription@.
+foreign import ccall unsafe "rd_kafka_subscription"
+  subscription ::
+       Ptr Handle -- ^ Kafka handle
+    -> Ptr (Ptr TopicPartitionList) -- ^ Topics, output param
     -> IO ResponseError
 
 -- | Calls @rd_kafka_topic_name@.

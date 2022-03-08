@@ -7,6 +7,7 @@
 module Rdkafka.Client.Consumer
   ( subscribe
   , subscribePartition
+  , subscription
   , poll
   , pollMany
   , close
@@ -29,6 +30,7 @@ import GHC.Exts (raiseIO#)
 import GHC.IO (IO(IO))
 import Rdkafka.Client.Types (Consumer(Consumer))
 import Rdkafka.Types (ResponseError,Message,Partition,OffsetCommitCallback,Watermarks(..))
+import Rdkafka.Types (TopicPartitionList)
 
 import qualified Rdkafka as X
 import qualified Rdkafka.Constant.ResponseError as ResponseError
@@ -44,6 +46,20 @@ subscribe ::
   -> ManagedCString -- ^ Topic name
   -> IO (Either ResponseError ())
 subscribe !c !t = subscribePartition c t Partition.Unassigned
+
+-- | Get the list of subscriptions. The caller must delete the topic
+-- partition list with 'topicPartitionListDestroy' after using it.
+subscription ::
+     Consumer -- ^ Kafka handle
+  -> IO (Either ResponseError (Ptr TopicPartitionList))
+subscription (Consumer h) = do
+  buf <- PM.newPinnedPrimArray 1
+  PM.writePrimArray buf 0 (nullPtr :: Ptr TopicPartitionList)
+  e <- X.subscription h (PM.mutablePrimArrayContents buf)
+  r <- PM.readPrimArray buf 0
+  case e of
+    ResponseError.NoError -> pure (Right r)
+    _ -> pure (Left e)
 
 -- | Subscribe to a single topic a specific partition.
 subscribePartition ::
