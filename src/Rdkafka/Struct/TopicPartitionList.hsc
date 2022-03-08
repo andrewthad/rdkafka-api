@@ -13,7 +13,7 @@ module Rdkafka.Struct.TopicPartitionList
   , peekSize
   , peekElements
     -- * Derived Combinators
-  , traverse
+  , traverse_
   ) where
 
 import Data.Int (Int64)
