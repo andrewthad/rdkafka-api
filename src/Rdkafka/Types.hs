@@ -24,13 +24,14 @@ module Rdkafka.Types
   , ValueUnion
     -- * Special Types
   , MessageOpaque(..)
+  , Watermarks(..)
     -- * Callbacks
   , LogCallback
   , DeliveryReportMessageCallback
   , OffsetCommitCallback
   ) where
 
-import Data.Int (Int32)
+import Data.Int (Int32,Int64)
 import Data.Void (Void)
 import Foreign.Ptr (Ptr)
 import Foreign.C.Types (CInt)
@@ -131,3 +132,10 @@ type DeliveryReportMessageCallback =
 -- and to @rd_kafka_commit_queue@.
 type OffsetCommitCallback =
   Ptr Handle -> ResponseError -> Ptr TopicPartitionList -> Ptr Void -> IO ()
+
+-- | This does not correspond to any type in librdkafka. It is the tuple
+-- returned by rd_kafka_query_watermark_offsets through output parameters.
+data Watermarks = Watermarks
+  { low :: !Int64
+  , high :: !Int64
+  }

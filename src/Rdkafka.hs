@@ -27,12 +27,17 @@ module Rdkafka
   , destroy
   , consumerClose
   , subscribe
+  , subscription
+  , assignment
   , messageDestroy
   , newTopicNew
   , newTopicDestroy
   , eventDestroy
   , createTopic
   , eventType
+  , offsetsStore
+  , seekPartitions
+  , queryWatermarkOffsets
   , version
   , versionString
   , versionByteArray
@@ -240,6 +245,8 @@ consumerPollNonblocking !tpl = unsafeRdKafkaConsumerPoll tpl 0
 -- | Calls @rd_kafka_poll@. Blocks until a message is available
 -- or until the specified number of milliseconds have elapsed. Uses the
 -- safe FFI.
+--
+-- TODO: Make this crash when given a number larger than 2 billion.
 poll ::
      Ptr Handle -- ^ Kafka handle
   -> Int -- ^ Milliseconds to wait for message, @-1@ means wait indefinitely
@@ -459,6 +466,18 @@ die :: Exception e => e -> IO a
 {-# inline die #-}
 die e = IO (Exts.raiseIO# (toException e))
 
+-- | Query broker for low (oldest/beginning) and high (newest/end) offsets for partition.
+-- Offsets are returned in @low@ and @high@ respectively.
+queryWatermarkOffsets ::
+     Ptr Handle
+  -> ManagedCString -- ^ Topic name
+  -> Partition -- ^ Partition
+  -> Ptr Int64 -- ^ Earliest offset, output parameter
+  -> Ptr Int64 -- ^ Latest offset, output parameter
+  -> CInt -- ^ Timeout in milliseconds
+  -> IO ResponseError
+queryWatermarkOffsets !h (ManagedCString (ByteArray name)) p s e timeout =
+  safeQueryWatermarkOffsets h name p s e timeout
 
 shrinkMutableByteArray ::
      MutableByteArray RealWorld
@@ -591,6 +610,20 @@ foreign import ccall unsafe "rd_kafka_subscribe"
   subscribe ::
        Ptr Handle -- ^ Kafka handle
     -> Ptr TopicPartitionList -- ^ Topics
+    -> IO ResponseError
+
+-- | Calls @rd_kafka_subscription@.
+foreign import ccall unsafe "rd_kafka_subscription"
+  subscription ::
+       Ptr Handle -- ^ Kafka handle
+    -> Ptr (Ptr TopicPartitionList) -- ^ Topics, output param
+    -> IO ResponseError
+
+-- | Calls @rd_kafka_assignment@.
+foreign import ccall unsafe "rd_kafka_assignment"
+  assignment ::
+       Ptr Handle -- ^ Kafka handle
+    -> Ptr (Ptr TopicPartitionList) -- ^ Topics, output param
     -> IO ResponseError
 
 -- | Calls @rd_kafka_topic_name@.
@@ -755,6 +788,31 @@ foreign import ccall unsafe "rd_kafka_headers_destroy"
        Ptr Headers
     -> IO ()
 
+-- | Calls @rd_kafka_offsets_store@.
+foreign import ccall unsafe "rd_kafka_offsets_store"
+  offsetsStore ::
+       Ptr Handle
+    -> Ptr TopicPartitionList
+    -> IO ResponseError
+
+-- | Calls @rd_kafka_seek_partitions@.
+foreign import ccall safe "rd_kafka_seek_partitions"
+  seekPartitions ::
+       Ptr Handle
+    -> Ptr TopicPartitionList -- ^ Partitions
+    -> CInt -- ^ Timeout in milliseconds
+    -> IO ResponseError
+
+foreign import ccall safe "rd_kafka_query_watermark_offsets"
+  safeQueryWatermarkOffsets ::
+     Ptr Handle
+  -> ByteArray# -- ^ Topic name
+  -> Partition -- ^ Partition
+  -> Ptr Int64 -- ^ Earliest offset, output parameter
+  -> Ptr Int64 -- ^ Latest offset, output parameter
+  -> CInt -- ^ Timeout in milliseconds
+  -> IO ResponseError
+
 -- | Wrap a delivery report message callback. This allocates storage that
 -- is not reclaimed until @freeHaskellFunPtr@ is called.
 foreign import ccall "wrapper"
@@ -776,3 +834,4 @@ foreign import ccall "wrapper"
   wrapOffsetCommitCallback ::
        OffsetCommitCallback
     -> IO (FunPtr OffsetCommitCallback)
+

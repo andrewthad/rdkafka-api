@@ -24,6 +24,7 @@ library
     Rdkafka.Constant.Type
     Rdkafka.Struct.Message
     Rdkafka.Struct.TopicPartition
+    Rdkafka.Struct.TopicPartitionList
     Rdkafka.Struct.ValueUnion
     Rdkafka.Types
     -- TODO: Move these into different library.
