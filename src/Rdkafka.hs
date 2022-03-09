@@ -36,6 +36,7 @@ module Rdkafka
   , createTopic
   , eventType
   , offsetsStore
+  , seekPartitions
   , queryWatermarkOffsets
   , version
   , versionString
@@ -792,6 +793,14 @@ foreign import ccall unsafe "rd_kafka_offsets_store"
   offsetsStore ::
        Ptr Handle
     -> Ptr TopicPartitionList
+    -> IO ResponseError
+
+-- | Calls @rd_kafka_seek_partitions@.
+foreign import ccall safe "rd_kafka_seek_partitions"
+  seekPartitions ::
+       Ptr Handle
+    -> Ptr TopicPartitionList -- ^ Partitions
+    -> CInt -- ^ Timeout in milliseconds
     -> IO ResponseError
 
 foreign import ccall safe "rd_kafka_query_watermark_offsets"

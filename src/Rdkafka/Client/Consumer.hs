@@ -15,8 +15,9 @@ module Rdkafka.Client.Consumer
   , commit
     -- * Watermarks
   , queryPartitionWatermarks
-    -- * Assign Offsets
+    -- * Modify Offsets
   , offsetsStore
+  , seekPartitions
   ) where
 
 import Control.Exception (toException)
@@ -237,6 +238,17 @@ offsetsStore ::
   -> IO (Either ResponseError ())
 offsetsStore (Consumer h) !tpl = do
   e <- X.offsetsStore h tpl
+  case e of
+    ResponseError.NoError -> pure (Right ())
+    _ -> pure (Left e)
+
+-- | Calls @rd_kafka_seek_partitions@.
+seekPartitions ::
+     Consumer
+  -> Ptr TopicPartitionList
+  -> IO (Either ResponseError ())
+seekPartitions (Consumer h) !tpl = do
+  e <- X.seekPartitions h tpl 30_000
   case e of
     ResponseError.NoError -> pure (Right ())
     _ -> pure (Left e)
