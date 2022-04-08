@@ -55,7 +55,7 @@ peekKey :: Ptr Message -> IO (Ptr Void)
 peekKey = #{peek rd_kafka_message_t, key}
 
 -- | Get field @key_len@
-peekKeyLength :: Ptr Message -> IO (Ptr CSize)
+peekKeyLength :: Ptr Message -> IO CSize
 peekKeyLength = #{peek rd_kafka_message_t, key_len}
 
 -- | Get field @offset@
