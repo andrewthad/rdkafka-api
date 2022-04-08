@@ -776,11 +776,12 @@ foreign import ccall unsafe "rd_kafka_headers_new"
 -- | Calls @rd_kafka_header_add@.
 foreign import ccall unsafe "rd_kafka_header_add"
   headerAdd ::
-       Ptr CChar -- name
+       Ptr Headers
+    -> Ptr CChar -- name
     -> CSsize -- name size
     -> Ptr Void -- value
     -> CSsize -- value size
-    -> IO (Ptr Headers)
+    -> IO ResponseError
 
 -- | Calls @rd_kafka_headers_destroy@.
 foreign import ccall unsafe "rd_kafka_headers_destroy"
