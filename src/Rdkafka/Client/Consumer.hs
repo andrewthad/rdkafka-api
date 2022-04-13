@@ -18,6 +18,9 @@ module Rdkafka.Client.Consumer
     -- * Modify Offsets
   , offsetsStore
   , seekPartitions
+    -- * Retreive message headers
+  , messageHeaders
+  , headerGetLast
   ) where
 
 import Control.Exception (toException)
@@ -27,6 +30,8 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.Primitive (PrimArray)
 import Data.Word (Word64)
+import Foreign.C.Types (CChar,CSize)
+import Data.Void (Void)
 import Foreign.C.String.Managed (ManagedCString)
 import Foreign.Ptr (Ptr,FunPtr,nullPtr)
 import GHC.Clock (getMonotonicTimeNSec)
@@ -34,7 +39,7 @@ import GHC.Exts (raiseIO#)
 import GHC.IO (IO(IO))
 import Rdkafka.Client.Types (Consumer(Consumer))
 import Rdkafka.Types (ResponseError,Message,Partition,OffsetCommitCallback,Watermarks(..))
-import Rdkafka.Types (TopicPartitionList)
+import Rdkafka.Types (TopicPartitionList,Headers)
 
 import qualified Rdkafka as X
 import qualified Rdkafka.Constant.ResponseError as ResponseError
@@ -251,4 +256,37 @@ seekPartitions (Consumer h) !tpl = do
   e <- X.seekPartitions h tpl 30_000
   case e of
     ResponseError.NoError -> pure (Right ())
+    _ -> pure (Left e)
+
+-- | Calls @rd_kafka_message_headers@. Returns @RD_KAFKA_RESP_ERR__NOENT@
+-- if no headers are present.
+messageHeaders ::
+     Ptr Message
+  -> IO (Either ResponseError (Ptr Headers))
+messageHeaders m = do
+  buf <- PM.newPinnedPrimArray 1
+  PM.writePrimArray buf 0 (nullPtr :: Ptr Headers)
+  e <- X.messageHeaders m (PM.mutablePrimArrayContents buf)
+  r <- PM.readPrimArray buf 0
+  case e of
+    ResponseError.NoError -> pure (Right r)
+    _ -> pure (Left e)
+
+-- | Returns @RD_KAFKA_RESP_ERR__NOENT@ if no matching header found.
+headerGetLast ::
+     Ptr Headers
+  -> Ptr CChar -- ^ Must be null-terminated
+  -> IO (Either ResponseError (Ptr Void, CSize))
+{-# inline headerGetLast #-}
+headerGetLast !hdrs !key = do
+  payload <- PM.newPinnedPrimArray 1
+  PM.writePrimArray payload 0 (nullPtr :: Ptr Void)
+  size <- PM.newPinnedPrimArray 1
+  PM.writePrimArray size 0 (0 :: CSize)
+  e <- X.headerGetLast hdrs key
+    (PM.mutablePrimArrayContents payload) (PM.mutablePrimArrayContents size)
+  payload' <- PM.readPrimArray payload 0
+  size' <- PM.readPrimArray size 0
+  case e of
+    ResponseError.NoError -> pure (Right (payload', size'))
     _ -> pure (Left e)

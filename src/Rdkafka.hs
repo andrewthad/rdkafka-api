@@ -30,6 +30,7 @@ module Rdkafka
   , subscription
   , assignment
   , messageDestroy
+  , messageHeaders
   , newTopicNew
   , newTopicDestroy
   , eventDestroy
@@ -58,6 +59,7 @@ module Rdkafka
   , headersDestroy
   , headersNew
   , headerAdd
+  , headerGetLast
     -- * Wrapper
   , wrapDeliveryReportMessageCallback
   , wrapLogCallback
@@ -677,6 +679,25 @@ foreign import ccall unsafe "rd_kafka_message_destroy"
   messageDestroy ::
        Ptr Message -- ^ @Event@ to free
     -> IO ()
+
+-- | Calls @rd_kafka_header_get_last@. Prefer the wrapped function in
+-- @Rdkafka.Client.Consumer@.
+foreign import ccall unsafe "rd_kafka_header_get_last"
+  headerGetLast ::
+       Ptr Headers -- ^ Headers
+    -> Ptr CChar -- ^ Header name
+    -> Ptr (Ptr Void) -- ^ Output parameter for header value
+    -> Ptr CSize -- ^ Output parameter for header value size
+    -> IO ResponseError
+
+-- | Calls @rd_kafka_message_headers@. Returns @RD_KAFKA_RESP_ERR__NOENT@
+-- if no headers are present. Prefer the wrapped function in
+-- @Rdkafka.Client.Consumer@.
+foreign import ccall unsafe "rd_kafka_message_headers"
+  messageHeaders ::
+       Ptr Message -- ^ Message
+    -> Ptr (Ptr Headers) -- ^ Output parameter
+    -> IO ResponseError
 
 foreign import ccall unsafe "rd_kafka_topic_partition_list_new"
   rdKafkaTopicPartitionListNew :: CInt -> IO (Ptr TopicPartitionList)
