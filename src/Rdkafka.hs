@@ -33,6 +33,7 @@ module Rdkafka
   , messageHeaders
   , newTopicNew
   , newTopicDestroy
+  , offsetsForTimes
   , eventDestroy
   , createTopic
   , eventType
@@ -835,6 +836,13 @@ foreign import ccall safe "rd_kafka_query_watermark_offsets"
   -> CInt -- ^ Timeout in milliseconds
   -> IO ResponseError
 
+foreign import ccall safe "rd_kafka_offsets_for_times"
+  offsetsForTimes ::
+     Ptr Handle
+  -> Ptr TopicPartitionList -- ^ Offsets
+  -> CInt -- ^ Timeout in milliseconds
+  -> IO ResponseError
+
 -- | Wrap a delivery report message callback. This allocates storage that
 -- is not reclaimed until @freeHaskellFunPtr@ is called.
 foreign import ccall "wrapper"
@@ -856,4 +864,3 @@ foreign import ccall "wrapper"
   wrapOffsetCommitCallback ::
        OffsetCommitCallback
     -> IO (FunPtr OffsetCommitCallback)
-
