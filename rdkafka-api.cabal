@@ -34,7 +34,7 @@ library
     Rdkafka.Client.Producer
     Rdkafka.Client.Consumer
   build-depends:
-    , base >=4.12 && <4.15
+    , base >=4.12 && <5
     , primitive >= 0.7
     , byteslice >= 0.2.2
     , posix-api >=0.3.5
