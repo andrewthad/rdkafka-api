@@ -13,6 +13,68 @@ build-type: Simple
 extra-source-files:
   CHANGELOG.md
   cbits/HaskellRdkafka.c
+  cbits/hs_rdkafka.c
+  cbits/hs_rdkafka_broker.c
+  cbits/hs_rdkafka_msg.c
+  cbits/hs_rdkafka_topic.c
+  cbits/hs_rdkafka_conf.c
+  cbits/hs_rdkafka_timer.c
+  cbits/hs_rdkafka_offset.c
+  cbits/hs_rdkafka_transport.c
+  cbits/hs_rdkafka_buf.c
+  cbits/hs_rdkafka_queue.c
+  cbits/hs_rdkafka_op.c
+  cbits/hs_rdkafka_request.c
+  cbits/hs_rdkafka_cgrp.c
+  cbits/hs_rdkafka_pattern.c
+  cbits/hs_rdkafka_partition.c
+  cbits/hs_rdkafka_subscription.c
+  cbits/hs_rdkafka_assignment.c
+  cbits/hs_rdkafka_assignor.c
+  cbits/hs_rdkafka_range_assignor.c
+  cbits/hs_rdkafka_roundrobin_assignor.c
+  cbits/hs_rdkafka_sticky_assignor.c
+  cbits/hs_rdkafka_feature.c
+  cbits/hs_rdcrc32.c
+  cbits/hs_crc32c.c
+  cbits/hs_rdmurmur2.c
+  cbits/hs_rdfnv1a.c
+  cbits/hs_cJSON.c
+  cbits/hs_rdaddr.c
+  cbits/hs_rdrand.c
+  cbits/hs_rdlist.c
+  cbits/hs_tinycthread.c
+  cbits/hs_tinycthread_extra.c
+  cbits/hs_rdlog.c
+  cbits/hs_rdstring.c
+  cbits/hs_rdkafka_event.c
+  cbits/hs_rdkafka_metadata.c
+  cbits/hs_rdregex.c
+  cbits/hs_rdports.c
+  cbits/hs_rdkafka_metadata_cache.c
+  cbits/hs_rdavl.c
+  cbits/hs_rdkafka_interceptor.c
+  cbits/hs_rdkafka_msgset_writer.c
+  cbits/hs_rdkafka_msgset_reader.c
+  cbits/hs_rdkafka_header.c
+  cbits/hs_rdkafka_admin.c
+  cbits/hs_rdkafka_aux.c
+  cbits/hs_rdkafka_background.c
+  cbits/hs_rdkafka_idempotence.c
+  cbits/hs_rdkafka_cert.c
+  cbits/hs_rdkafka_txnmgr.c
+  cbits/hs_rdkafka_coord.c
+  cbits/hs_rdvarint.c
+  cbits/hs_rdbuf.c
+  cbits/hs_rdmap.c
+  cbits/hs_rdkafka_error.c
+  cbits/hs_snappy.c
+  cbits/hs_rdgz.c
+  cbits/hs_rdhdrhistogram.c
+  cbits/hs_rdkafka_lz4.c
+  cbits/hs_rdxxhash.c
+  cbits/hs_rddl.c
+  cbits/hs_rdkafka_plugin.c
 
 library
   exposed-modules:
@@ -41,7 +103,71 @@ library
     , bytestring >= 0.10.8 && <0.12
     , run-st >= 0.1.1
   hs-source-dirs: src
-  c-sources: cbits/HaskellRdkafka.c
-  extra-libraries: rdkafka
+  include-dirs: cbits
+  c-sources:
+    cbits/HaskellRdkafka.c
+    cbits/hs_rdkafka.c
+    cbits/hs_rdkafka_broker.c
+    cbits/hs_rdkafka_msg.c
+    cbits/hs_rdkafka_topic.c
+    cbits/hs_rdkafka_conf.c
+    cbits/hs_rdkafka_timer.c
+    cbits/hs_rdkafka_offset.c
+    cbits/hs_rdkafka_transport.c
+    cbits/hs_rdkafka_buf.c
+    cbits/hs_rdkafka_queue.c
+    cbits/hs_rdkafka_op.c
+    cbits/hs_rdkafka_request.c
+    cbits/hs_rdkafka_cgrp.c
+    cbits/hs_rdkafka_pattern.c
+    cbits/hs_rdkafka_partition.c
+    cbits/hs_rdkafka_subscription.c
+    cbits/hs_rdkafka_assignment.c
+    cbits/hs_rdkafka_assignor.c
+    cbits/hs_rdkafka_range_assignor.c
+    cbits/hs_rdkafka_roundrobin_assignor.c
+    cbits/hs_rdkafka_sticky_assignor.c
+    cbits/hs_rdkafka_feature.c
+    cbits/hs_rdcrc32.c
+    cbits/hs_crc32c.c
+    cbits/hs_rdmurmur2.c
+    cbits/hs_rdfnv1a.c
+    cbits/hs_cJSON.c
+    cbits/hs_rdaddr.c
+    cbits/hs_rdrand.c
+    cbits/hs_rdlist.c
+    cbits/hs_tinycthread.c
+    cbits/hs_tinycthread_extra.c
+    cbits/hs_rdlog.c
+    cbits/hs_rdstring.c
+    cbits/hs_rdkafka_event.c
+    cbits/hs_rdkafka_metadata.c
+    cbits/hs_rdregex.c
+    cbits/hs_rdports.c
+    cbits/hs_rdkafka_metadata_cache.c
+    cbits/hs_rdavl.c
+    cbits/hs_rdkafka_interceptor.c
+    cbits/hs_rdkafka_msgset_writer.c
+    cbits/hs_rdkafka_msgset_reader.c
+    cbits/hs_rdkafka_header.c
+    cbits/hs_rdkafka_admin.c
+    cbits/hs_rdkafka_aux.c
+    cbits/hs_rdkafka_background.c
+    cbits/hs_rdkafka_idempotence.c
+    cbits/hs_rdkafka_cert.c
+    cbits/hs_rdkafka_txnmgr.c
+    cbits/hs_rdkafka_coord.c
+    cbits/hs_rdvarint.c
+    cbits/hs_rdbuf.c
+    cbits/hs_rdmap.c
+    cbits/hs_rdkafka_error.c
+    cbits/hs_snappy.c
+    cbits/hs_rdgz.c
+    cbits/hs_rdhdrhistogram.c
+    cbits/hs_rdkafka_lz4.c
+    cbits/hs_rdxxhash.c
+    cbits/hs_rddl.c
+    cbits/hs_rdkafka_plugin.c
+  extra-libraries: lz4
   build-tool-depends: hsc2hs:hsc2hs >= 0.68.5
   default-language: Haskell2010

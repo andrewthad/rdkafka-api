@@ -1,4 +1,4 @@
-#include <librdkafka/rdkafka.h>
+#include "hs_rdkafka.h"
 
 {-# language BangPatterns #-}
 {-# language DeriveAnyClass #-}

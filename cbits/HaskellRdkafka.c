@@ -1,5 +1,5 @@
-#include <librdkafka/rdkafka.h>
 #include <string.h>
+#include "hs_rdkafka.h"
 #include "Rts.h"
 
 rd_kafka_resp_err_t hsrdk_copy_version_string(char* dst) {

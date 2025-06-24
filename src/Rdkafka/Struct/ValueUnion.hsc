@@ -1,4 +1,4 @@
-#include <librdkafka/rdkafka.h>
+#include "hs_rdkafka.h"
 {-# language BangPatterns #-}
 
 -- | ValueUnion corresponds to @rd_kafka_vu_t@. This struct is 
