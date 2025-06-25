@@ -14,6 +14,7 @@ module Rdkafka
   ( configurationNew
   , configurationDestroy
   , configurationSet
+  , configurationSetThrow
   , configurationSetLogCallback
   , configurationSetDeliveryReportMessageCallback
   , topicPartitionListNew
@@ -65,6 +66,8 @@ module Rdkafka
   , wrapDeliveryReportMessageCallback
   , wrapLogCallback
   , wrapOffsetCommitCallback
+    -- * Exceptions
+  , ConfigurationSetException(..)
     -- * Auxiliary Functions
     -- | These functions are not part of @librdkafka@, but they are
     -- useful when using this library.
@@ -73,7 +76,7 @@ module Rdkafka
   , finalizeErrorBuffer
   ) where
 
-import Control.Exception (Exception,toException)
+import Control.Exception (Exception,toException,throwIO)
 import Data.ByteString (ByteString)
 import Data.Bytes.Types (Bytes(Bytes))
 import Data.Int (Int64)
@@ -104,6 +107,12 @@ import qualified Foreign.C.String.Managed as ManagedCString
 import qualified GHC.Exts as Exts
 import qualified Rdkafka.Constant.ResponseError as ResponseError
 import qualified Rdkafka.Types as T
+import qualified Rdkafka.Constant.ConfigurationResult as ConfigurationResult
+
+data ConfigurationSetException
+  = ConfigurationSetException !ManagedCString
+  deriving stock (Show)
+  deriving anyclass (Exception)
 
 -- | Create a new @rd_kafka_t@. Calls @rd_kafka_new@.
 new ::
@@ -272,6 +281,24 @@ configurationSet !p !name !val (MutableByteArray err# ) !errSz =
   where
   !(ManagedCString (ByteArray name# )) = name
   !(ManagedCString (ByteArray val# )) = val
+
+-- | Variant of 'configurationSet' that throws exceptions instead
+-- of returning them.
+--
+-- When building a configuration at load time, users typically just want
+-- the application to die immidiately if something is wrong.
+configurationSetThrow :: 
+     Ptr Configuration
+  -> ManagedCString -- ^ Name
+  -> ManagedCString -- ^ Value
+  -> MutableByteArray RealWorld -- ^ Error string buffer
+  -> Int -- ^ Error string size
+  -> IO ()
+configurationSetThrow !p !name !val !err !errSz = do
+  r <- configurationSet p name val err errSz
+  case r of
+    ConfigurationResult.Ok -> pure ()
+    _ -> throwIO (ConfigurationSetException name)
 
 -- | Calls @rd_kafka_conf_set_log_cb@. In a real application, this should
 -- always be set. The default is to log everything to @stderr@, but if Haskell
