@@ -16,5 +16,6 @@ with a number of settings hardcoded. Here are the settings:
   have been deleted.
 * This library dynamically links against lz4
 * All source files have been renamed with an `hs_` prefix
+* All unit tests have been removed from lbrdkafka source code
 
 The version of rdkafka is 1.9.2, the last stable release in the 1.x series.
