@@ -242,6 +242,6 @@ library
     cbits/hs_rdxxhash.c
     cbits/hs_rddl.c
     cbits/hs_rdkafka_plugin.c
-  extra-libraries: lz4
+  extra-libraries: lz4, z
   build-tool-depends: hsc2hs:hsc2hs >= 0.68.5
   default-language: Haskell2010
