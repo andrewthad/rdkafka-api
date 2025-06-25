@@ -114,7 +114,6 @@ extra-source-files:
   cbits/hs_rdkafka_proto.h
   cbits/hs_rdkafka_admin.h
   cbits/hs_rdlog.h
-  cbits/hs_rdkafka_mock.h
   cbits/hs_snappy_compat.h
   cbits/hs_rdstring.h
   cbits/hs_rdgz.h

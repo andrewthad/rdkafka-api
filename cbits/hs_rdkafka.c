@@ -1255,21 +1255,6 @@ static void rd_kafka_destroy_internal(rd_kafka_t *rk) {
 
         rd_list_destroy(&wait_thrds);
 
-        /* Destroy mock cluster */
-        if (rk->rk_mock.cluster)
-                rd_kafka_mock_cluster_destroy(rk->rk_mock.cluster);
-
-        if (rd_atomic32_get(&rk->rk_mock.cluster_cnt) > 0) {
-                rd_kafka_log(rk, LOG_EMERG, "MOCK",
-                             "%d mock cluster(s) still active: "
-                             "must be explicitly destroyed with "
-                             "rd_kafka_mock_cluster_destroy() prior to "
-                             "terminating the rd_kafka_t instance",
-                             (int)rd_atomic32_get(&rk->rk_mock.cluster_cnt));
-                rd_assert(!*"All mock clusters must be destroyed prior to "
-                          "rd_kafka_t destroy");
-        }
-
         /* Destroy metadata cache */
         rd_kafka_wrlock(rk);
         rd_kafka_metadata_cache_destroy(rk);
@@ -2312,48 +2297,6 @@ rd_kafka_t *rd_kafka_new(rd_kafka_type_t type,
                 ret_err   = RD_KAFKA_RESP_ERR__INVALID_ARG;
                 ret_errno = EINVAL;
                 goto fail;
-        }
-
-        /* Create Mock cluster */
-        rd_atomic32_init(&rk->rk_mock.cluster_cnt, 0);
-        if (rk->rk_conf.mock.broker_cnt > 0) {
-                const char *mock_bootstraps;
-                rk->rk_mock.cluster =
-                    rd_kafka_mock_cluster_new(rk, rk->rk_conf.mock.broker_cnt);
-
-                if (!rk->rk_mock.cluster) {
-                        rd_snprintf(errstr, errstr_size,
-                                    "Failed to create mock cluster, see logs");
-                        ret_err   = RD_KAFKA_RESP_ERR__FAIL;
-                        ret_errno = EINVAL;
-                        goto fail;
-                }
-
-                mock_bootstraps =
-                    rd_kafka_mock_cluster_bootstraps(rk->rk_mock.cluster),
-                rd_kafka_log(rk, LOG_NOTICE, "MOCK",
-                             "Mock cluster enabled: "
-                             "original bootstrap.servers and security.protocol "
-                             "ignored and replaced with %s",
-                             mock_bootstraps);
-
-                /* Overwrite bootstrap.servers and connection settings */
-                if (rd_kafka_conf_set(&rk->rk_conf, "bootstrap.servers",
-                                      mock_bootstraps, NULL,
-                                      0) != RD_KAFKA_CONF_OK)
-                        rd_assert(!"failed to replace mock bootstrap.servers");
-
-                if (rd_kafka_conf_set(&rk->rk_conf, "security.protocol",
-                                      "plaintext", NULL, 0) != RD_KAFKA_CONF_OK)
-                        rd_assert(!"failed to reset mock security.protocol");
-
-                rk->rk_conf.security_protocol = RD_KAFKA_PROTO_PLAINTEXT;
-
-                /* Apply default RTT to brokers */
-                if (rk->rk_conf.mock.broker_rtt)
-                        rd_kafka_mock_broker_set_rtt(
-                            rk->rk_mock.cluster, -1 /*all brokers*/,
-                            rk->rk_conf.mock.broker_rtt);
         }
 
         if (type == RD_KAFKA_CONSUMER) {

@@ -93,11 +93,9 @@ typedef struct rd_kafka_lwtopic_s rd_kafka_lwtopic_t;
 #include "hs_rdkafka_timer.h"
 #include "hs_rdkafka_assignor.h"
 #include "hs_rdkafka_metadata.h"
-#include "hs_rdkafka_mock.h"
 #include "hs_rdkafka_partition.h"
 #include "hs_rdkafka_assignment.h"
 #include "hs_rdkafka_coord.h"
-#include "hs_rdkafka_mock.h"
 
 /**
  * Protocol level sanity
@@ -608,7 +606,7 @@ struct rd_kafka_s {
 
         /* Test mocks */
         struct {
-                rd_kafka_mock_cluster_t *cluster; /**< Mock cluster, created
+                void *cluster; /**< Mock cluster, created
                                                    *   by test.mock.num.brokers
                                                    */
                 rd_atomic32_t cluster_cnt;        /**< Total number of mock

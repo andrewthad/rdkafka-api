@@ -92,7 +92,6 @@ const char *rd_kafka_op2str(rd_kafka_op_type_t type) {
             [RD_KAFKA_OP_PURGE]               = "REPLY:PURGE",
             [RD_KAFKA_OP_CONNECT]             = "REPLY:CONNECT",
             [RD_KAFKA_OP_OAUTHBEARER_REFRESH] = "REPLY:OAUTHBEARER_REFRESH",
-            [RD_KAFKA_OP_MOCK]                = "REPLY:MOCK",
             [RD_KAFKA_OP_BROKER_MONITOR]      = "REPLY:BROKER_MONITOR",
             [RD_KAFKA_OP_TXN]                 = "REPLY:TXN",
             [RD_KAFKA_OP_GET_REBALANCE_PROTOCOL] =
@@ -234,7 +233,6 @@ rd_kafka_op_t *rd_kafka_op_new0(const char *source, rd_kafka_op_type_t type) {
             [RD_KAFKA_OP_PURGE]        = sizeof(rko->rko_u.purge),
             [RD_KAFKA_OP_CONNECT]      = _RD_KAFKA_OP_EMPTY,
             [RD_KAFKA_OP_OAUTHBEARER_REFRESH] = _RD_KAFKA_OP_EMPTY,
-            [RD_KAFKA_OP_MOCK]                = sizeof(rko->rko_u.mock),
             [RD_KAFKA_OP_BROKER_MONITOR] = sizeof(rko->rko_u.broker_monitor),
             [RD_KAFKA_OP_TXN]            = sizeof(rko->rko_u.txn),
             [RD_KAFKA_OP_GET_REBALANCE_PROTOCOL] =
@@ -392,11 +390,6 @@ void rd_kafka_op_destroy(rd_kafka_op_t *rko) {
                 RD_IF_FREE(rko->rko_u.admin_result.errstr, rd_free);
                 rd_assert(!rko->rko_u.admin_result.fanout_parent);
                 ;
-                break;
-
-        case RD_KAFKA_OP_MOCK:
-                RD_IF_FREE(rko->rko_u.mock.name, rd_free);
-                RD_IF_FREE(rko->rko_u.mock.str, rd_free);
                 break;
 
         case RD_KAFKA_OP_BROKER_MONITOR:
