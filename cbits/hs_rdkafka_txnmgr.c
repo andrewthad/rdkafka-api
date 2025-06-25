@@ -39,7 +39,6 @@
 #include "hs_rdkafka_idempotence.h"
 #include "hs_rdkafka_request.h"
 #include "hs_rdkafka_error.h"
-#include "hs_rdunittest.h"
 #include "hs_rdrand.h"
 
 
@@ -468,7 +467,6 @@ void rd_kafka_txn_idemp_state_change(rd_kafka_t *rk,
         if (idemp_state == RD_KAFKA_IDEMP_STATE_ASSIGNED &&
             rk->rk_eos.txn_state == RD_KAFKA_TXN_STATE_WAIT_PID) {
                 /* Application is calling (or has called) init_transactions() */
-                RD_UT_COVERAGE(1);
                 rd_kafka_txn_set_state(rk, RD_KAFKA_TXN_STATE_READY_NOT_ACKED);
                 reply_assigned = rd_true;
 

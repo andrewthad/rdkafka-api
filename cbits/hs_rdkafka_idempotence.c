@@ -31,7 +31,6 @@
 #include "hs_rdkafka_idempotence.h"
 #include "hs_rdkafka_txnmgr.h"
 #include "hs_rdkafka_request.h"
-#include "hs_rdunittest.h"
 
 #include <stdarg.h>
 
@@ -425,8 +424,6 @@ void rd_kafka_idemp_request_pid_failed(rd_kafka_broker_t *rkb,
                 rd_kafka_wrunlock(rk);
                 return; /* Fatal error */
         }
-
-        RD_UT_COVERAGE(0);
 
         if (rd_kafka_is_transactional(rk) &&
             (err == RD_KAFKA_RESP_ERR_NOT_COORDINATOR ||

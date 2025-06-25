@@ -289,8 +289,4 @@ void rd_kafka_local_topics_to_list(rd_kafka_t *rk,
                                    rd_list_t *topics,
                                    int *cache_cntp);
 
-void rd_ut_kafka_topic_set_topic_exists(rd_kafka_topic_t *rkt,
-                                        int partition_cnt,
-                                        int32_t leader_id);
-
 #endif /* _RDKAFKA_TOPIC_H_ */

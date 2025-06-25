@@ -77,6 +77,4 @@ rd_kafka_msgset_parse(rd_kafka_buf_t *rkbuf,
                       rd_kafka_aborted_txns_t *aborted_txns,
                       const struct rd_kafka_toppar_ver *tver);
 
-int unittest_aborted_txns(void);
-
 #endif /* _RDKAFKA_MSGSET_H_ */

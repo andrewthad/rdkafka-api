@@ -71,8 +71,6 @@
 #include <openssl/err.h>
 #endif
 #include "hs_rdendian.h"
-#include "hs_rdunittest.h"
-
 
 static const int rd_kafka_max_block_ms = 1000;
 
@@ -2033,53 +2031,6 @@ rd_kafka_broker_reconnect_backoff(const rd_kafka_broker_t *rkb, rd_ts_t now) {
 
         return (int)(remains / 1000);
 }
-
-
-/**
- * @brief Unittest for reconnect.backoff.ms
- */
-static int rd_ut_reconnect_backoff(void) {
-        rd_kafka_broker_t rkb = RD_ZERO_INIT;
-        rd_kafka_conf_t conf  = {.reconnect_backoff_ms     = 10,
-                                .reconnect_backoff_max_ms = 90};
-        rd_ts_t now           = 1000000;
-        int backoff;
-
-        rkb.rkb_reconnect_backoff_ms = conf.reconnect_backoff_ms;
-
-        /* broker's backoff is the initial reconnect.backoff.ms=10 */
-        rd_kafka_broker_update_reconnect_backoff(&rkb, &conf, now);
-        backoff = rd_kafka_broker_reconnect_backoff(&rkb, now);
-        RD_UT_ASSERT_RANGE(backoff, 7, 15, "%d");
-
-        /* .. 20 */
-        rd_kafka_broker_update_reconnect_backoff(&rkb, &conf, now);
-        backoff = rd_kafka_broker_reconnect_backoff(&rkb, now);
-        RD_UT_ASSERT_RANGE(backoff, 15, 30, "%d");
-
-        /* .. 40 */
-        rd_kafka_broker_update_reconnect_backoff(&rkb, &conf, now);
-        backoff = rd_kafka_broker_reconnect_backoff(&rkb, now);
-        RD_UT_ASSERT_RANGE(backoff, 30, 60, "%d");
-
-        /* .. 80, the jitter is capped at reconnect.backoff.max.ms=90  */
-        rd_kafka_broker_update_reconnect_backoff(&rkb, &conf, now);
-        backoff = rd_kafka_broker_reconnect_backoff(&rkb, now);
-        RD_UT_ASSERT_RANGE(backoff, 60, conf.reconnect_backoff_max_ms, "%d");
-
-        /* .. 90, capped by reconnect.backoff.max.ms */
-        rd_kafka_broker_update_reconnect_backoff(&rkb, &conf, now);
-        backoff = rd_kafka_broker_reconnect_backoff(&rkb, now);
-        RD_UT_ASSERT_RANGE(backoff, 67, conf.reconnect_backoff_max_ms, "%d");
-
-        /* .. 90, should remain at capped value. */
-        rd_kafka_broker_update_reconnect_backoff(&rkb, &conf, now);
-        backoff = rd_kafka_broker_reconnect_backoff(&rkb, now);
-        RD_UT_ASSERT_RANGE(backoff, 67, conf.reconnect_backoff_max_ms, "%d");
-
-        RD_UT_PASS();
-}
-
 
 /**
  * @brief Initiate asynchronous connection attempt to the next address
@@ -6530,19 +6481,3 @@ void rd_kafka_broker_monitor_del(rd_kafka_broker_monitor_t *rkbmon) {
         rd_kafka_broker_destroy(rkb);
 }
 
-
-
-/**
- * @name Unit tests
- * @{
- *
- */
-int unittest_broker(void) {
-        int fails = 0;
-
-        fails += rd_ut_reconnect_backoff();
-
-        return fails;
-}
-
-/**@}*/

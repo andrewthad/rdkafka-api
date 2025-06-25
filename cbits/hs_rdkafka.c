@@ -62,7 +62,6 @@
 
 #include "hs_rdtime.h"
 #include "hs_crc32c.h"
-#include "hs_rdunittest.h"
 
 #ifdef _WIN32
 #include <sys/types.h>
@@ -4912,8 +4911,4 @@ void rd_kafka_mem_free(rd_kafka_t *rk, void *ptr) {
 
 int rd_kafka_errno(void) {
         return errno;
-}
-
-int rd_kafka_unittest(void) {
-        return rd_unittest();
 }

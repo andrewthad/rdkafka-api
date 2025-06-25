@@ -157,8 +157,6 @@ static RD_INLINE RD_UNUSED size_t rd_varint_dec_i64(const char *src,
 #define RD_UVARINT_ENC_SIZE_0() ((size_t)1)
 
 
-int unittest_rdvarint(void);
-
 /**@}*/
 
 

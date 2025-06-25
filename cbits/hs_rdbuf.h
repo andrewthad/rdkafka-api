@@ -225,9 +225,6 @@ void rd_buf_destroy_free(rd_buf_t *rbuf);
 
 void rd_buf_dump(const rd_buf_t *rbuf, int do_hexdump);
 
-int unittest_rdbuf(void);
-
-
 /**@}*/
 
 

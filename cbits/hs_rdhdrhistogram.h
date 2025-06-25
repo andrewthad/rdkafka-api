@@ -82,6 +82,3 @@ double rd_hdr_histogram_mean(const rd_hdr_histogram_t *hdr);
 int64_t rd_hdr_histogram_max(const rd_hdr_histogram_t *hdr);
 int64_t rd_hdr_histogram_min(const rd_hdr_histogram_t *hdr);
 int64_t rd_hdr_histogram_quantile(const rd_hdr_histogram_t *hdr, double q);
-
-
-int unittest_rdhdrhistogram(void);

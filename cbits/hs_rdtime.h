@@ -63,18 +63,8 @@
 #define RD_POLL_INFINITE -1
 #define RD_POLL_NOWAIT   0
 
-
-#if RD_UNITTEST_QPC_OVERRIDES
-/* Overrides for rd_clock() unittest using QPC on Windows */
-BOOL rd_ut_QueryPerformanceFrequency(_Out_ LARGE_INTEGER *lpFrequency);
-BOOL rd_ut_QueryPerformanceCounter(_Out_ LARGE_INTEGER *lpPerformanceCount);
-#define rd_QueryPerformanceFrequency(IFREQ)                                    \
-        rd_ut_QueryPerformanceFrequency(IFREQ)
-#define rd_QueryPerformanceCounter(PC) rd_ut_QueryPerformanceCounter(PC)
-#else
 #define rd_QueryPerformanceFrequency(IFREQ) QueryPerformanceFrequency(IFREQ)
 #define rd_QueryPerformanceCounter(PC)      QueryPerformanceCounter(PC)
-#endif
 
 /**
  * @returns a monotonically increasing clock in microseconds.

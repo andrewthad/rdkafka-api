@@ -629,6 +629,4 @@ void rd_kafka_anyconf_dump_dbg(rd_kafka_t *rk,
 
 #include "hs_rdkafka_confval.h"
 
-int unittest_conf(void);
-
 #endif /* _RDKAFKA_CONF_H_ */

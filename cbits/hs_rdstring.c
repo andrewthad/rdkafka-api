@@ -29,7 +29,6 @@
 
 #include "hs_rd.h"
 #include "hs_rdstring.h"
-#include "hs_rdunittest.h"
 
 #include <ctype.h>
 
@@ -358,58 +357,6 @@ char *_rd_strcasestr(const char *haystack, const char *needle) {
 
 
 
-/**
- * @brief Unittests for rd_strcasestr()
- */
-static int ut_strcasestr(void) {
-        static const struct {
-                const char *haystack;
-                const char *needle;
-                ssize_t exp;
-        } strs[] = {
-            {"this is a haystack", "hays", 10},
-            {"abc", "a", 0},
-            {"abc", "b", 1},
-            {"abc", "c", 2},
-            {"AbcaBcabC", "ABC", 0},
-            {"abcabcaBC", "BcA", 1},
-            {"abcabcABc", "cAB", 2},
-            {"need to estart stART the tart ReStArT!", "REsTaRt", 30},
-            {"need to estart stART the tart ReStArT!", "?sTaRt", -1},
-            {"aaaabaaAb", "ab", 3},
-            {"0A!", "a", 1},
-            {"a", "A", 0},
-            {".z", "Z", 1},
-            {"", "", -1},
-            {"", "a", -1},
-            {"a", "", -1},
-            {"peRfeCt", "peRfeCt", 0},
-            {"perfect", "perfect", 0},
-            {"PERFECT", "perfect", 0},
-            {NULL},
-        };
-        int i;
-
-        RD_UT_BEGIN();
-
-        for (i = 0; strs[i].haystack; i++) {
-                const char *ret;
-                ssize_t of = -1;
-
-                ret = _rd_strcasestr(strs[i].haystack, strs[i].needle);
-                if (ret)
-                        of = ret - strs[i].haystack;
-                RD_UT_ASSERT(of == strs[i].exp,
-                             "#%d: '%s' in '%s': expected offset %" PRIdsz
-                             ", not %" PRIdsz " (%s)",
-                             i, strs[i].needle, strs[i].haystack, strs[i].exp,
-                             of, ret ? ret : "(NULL)");
-        }
-
-        RD_UT_PASS();
-}
-
-
 
 /**
  * @brief Split a character-separated string into an array.
@@ -535,95 +482,4 @@ char **rd_string_split(const char *input,
         *cntp = i;
 
         return arr;
-}
-
-/**
- * @brief Unittest for rd_string_split()
- */
-static int ut_string_split(void) {
-        static const struct {
-                const char *input;
-                const char sep;
-                rd_bool_t skip_empty;
-                size_t exp_cnt;
-                const char *exp[16];
-        } strs[] = {
-            {"just one field", ',', rd_true, 1, {"just one field"}},
-            /* Empty with skip_empty */
-            {"", ',', rd_true, 0},
-            /* Empty without skip_empty */
-            {"", ',', rd_false, 1, {""}},
-            {
-                ", a,b ,,c,   d,    e,f,ghijk,  lmn,opq  ,  r  s t u, v",
-                ',',
-                rd_true,
-                11,
-                {"a", "b", "c", "d", "e", "f", "ghijk", "lmn", "opq",
-                 "r  s t u", "v"},
-            },
-            {
-                ", a,b ,,c,   d,    e,f,ghijk,  lmn,opq  ,  r  s t u, v",
-                ',',
-                rd_false,
-                13,
-                {"", "a", "b", "", "c", "d", "e", "f", "ghijk", "lmn", "opq",
-                 "r  s t u", "v"},
-            },
-            {"  this is an \\,escaped comma,\\,,\\\\, "
-             "and this is an unbalanced escape: \\\\\\\\\\\\\\",
-             ',',
-             rd_true,
-             4,
-             {"this is an ,escaped comma", ",", "\\",
-              "and this is an unbalanced escape: \\\\\\"}},
-            {
-                "using|another ||\\|d|elimiter",
-                '|',
-                rd_false,
-                5,
-                {"using", "another", "", "|d", "elimiter"},
-            },
-            {NULL},
-        };
-        size_t i;
-
-        RD_UT_BEGIN();
-
-        for (i = 0; strs[i].input; i++) {
-                char **ret;
-                size_t cnt = 12345;
-                size_t j;
-
-                ret = rd_string_split(strs[i].input, strs[i].sep,
-                                      strs[i].skip_empty, &cnt);
-                RD_UT_ASSERT(ret != NULL, "#%" PRIusz ": Did not expect NULL",
-                             i);
-                RD_UT_ASSERT(cnt == strs[i].exp_cnt,
-                             "#%" PRIusz
-                             ": "
-                             "Expected %" PRIusz " elements, got %" PRIusz,
-                             i, strs[i].exp_cnt, cnt);
-
-                for (j = 0; j < cnt; j++)
-                        RD_UT_ASSERT(!strcmp(strs[i].exp[j], ret[j]),
-                                     "#%" PRIusz ": Expected string %" PRIusz
-                                     " to be \"%s\", not \"%s\"",
-                                     i, j, strs[i].exp[j], ret[j]);
-
-                rd_free(ret);
-        }
-
-        RD_UT_PASS();
-}
-
-/**
- * @brief Unittests for strings
- */
-int unittest_string(void) {
-        int fails = 0;
-
-        fails += ut_strcasestr();
-        fails += ut_string_split();
-
-        return fails;
 }

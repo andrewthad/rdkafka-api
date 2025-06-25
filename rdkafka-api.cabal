@@ -99,7 +99,6 @@ extra-source-files:
   cbits/hs_rdfnv1a.h
   cbits/hs_rdregex.h
   cbits/hs_rdkafka_queue.h
-  cbits/hs_rdunittest.h
   cbits/hs_rdhdrhistogram.h
   cbits/hs_rdkafka_int.h
   cbits/hs_rdkafka_conf.h

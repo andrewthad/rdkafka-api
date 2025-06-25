@@ -599,6 +599,4 @@ void rd_kafka_broker_monitor_add(rd_kafka_broker_monitor_t *rkbmon,
 
 void rd_kafka_broker_monitor_del(rd_kafka_broker_monitor_t *rkbmon);
 
-int unittest_broker(void);
-
 #endif /* _RDKAFKA_BROKER_H_ */

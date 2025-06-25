@@ -30,6 +30,5 @@
 #define __RDFNV1A___H__
 
 uint32_t rd_fnv1a(const void *key, size_t len);
-int unittest_fnv1a(void);
 
 #endif  // __RDFNV1A___H__
