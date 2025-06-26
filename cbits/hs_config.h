@@ -86,7 +86,7 @@
 // strndup
 #define HAVE_STRNDUP 1
 // strlcpy
-#define HAVE_STRLCPY 1
+#define HAVE_STRLCPY 0
 // strerror_r
 #define HAVE_STRERROR_R 1
 // strcasestr

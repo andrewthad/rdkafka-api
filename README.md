@@ -17,5 +17,7 @@ with a number of settings hardcoded. Here are the settings:
 * This library dynamically links against lz4
 * All source files have been renamed with an `hs_` prefix
 * All unit tests have been removed from lbrdkafka source code
+* The macro `HAVE_STRLCPY` is set to 0 because sometimes it's not available
+  on systems that I build on.
 
 The version of rdkafka is 1.9.2, the last stable release in the 1.x series.
