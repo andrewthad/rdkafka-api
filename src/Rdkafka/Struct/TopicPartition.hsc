@@ -1,4 +1,4 @@
-#include <librdkafka/rdkafka.h>
+#include "hs_rdkafka.h"
 
 -- | Message corresponds to @rd_kafka_topic_partition_t@ and has these fields:
 --
